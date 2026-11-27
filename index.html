@@ -253,7 +253,7 @@ function ajouterJours(k, n) { const d = dateDeCle(k); d.setDate(d.getDate() + n)
 function arr(x) { return Math.round(x * 100) / 100; }
 const RE_BIERE = /bi[eè]re|pinte|demi/i;
 function resume(entrees, pred, cigParPaquet) {
-  const r = { total: 0, verres: 0, std: 0, bieres: 0, paquets: 0, cigarettes: 0, soirsAlcool: 0, sorties: 0, parCat: {}, n: 0 };
+  const r = { total: 0, verres: 0, std: 0, bieres: 0, paquets: 0, prixPaquets: 0, clopes: 0, cigarettes: 0, estime: false, soirsAlcool: 0, sorties: 0, parCat: {}, n: 0 };
   const joursAlcool = new Set(), joursSortie = new Set();
   for (const e0 of entrees) {
     const e = Object.assign({}, e0, { jour: cleJour(e0.t) });
@@ -262,7 +262,8 @@ function resume(entrees, pred, cigParPaquet) {
     r.n++;
     r.total += e.prix || 0;
     if (e.alcool) { r.verres += q; r.std += (e.std || 1) * q; joursAlcool.add(e.jour); if (RE_BIERE.test(e.nom)) r.bieres += q; }
-    if (e.paquet) r.paquets += q;
+    if (e.paquet) { r.paquets += q; r.prixPaquets += e.prix || 0; }
+    if (e.clope) r.clopes += q;
     if (e.cat === 'bar' || e.cat === 'autrement') joursSortie.add(e.jour);
     const c = r.parCat[e.cat] || (r.parCat[e.cat] = { total: 0, qte: 0, articles: {} });
     c.total += e.prix || 0; c.qte += q;
@@ -271,7 +272,10 @@ function resume(entrees, pred, cigParPaquet) {
   }
   r.total = arr(r.total);
   for (const k in r.parCat) { r.parCat[k].total = arr(r.parCat[k].total); for (const a in r.parCat[k].articles) r.parCat[k].articles[a].total = arr(r.parCat[k].articles[a].total); }
-  r.cigarettes = r.paquets * (cigParPaquet || 20);
+  // les clopes comptées une à une priment ; sinon on estime à partir des paquets
+  r.estime = !r.clopes;
+  r.cigarettes = r.clopes || r.paquets * (cigParPaquet || 20);
+  r.prixClope = r.paquets ? arr(r.prixPaquets / (r.paquets * (cigParPaquet || 20))) : 0;
   r.soirsAlcool = joursAlcool.size;
   r.sorties = joursSortie.size;
   return r;
@@ -349,7 +353,7 @@ function depart() {
       { id: 'autrement', nom: 'Sortir autrement', cache: false, articles: [art('resto', 'Resto', { demander: true }), art('cine', 'Ciné', { demander: true }), art('concert', 'Concert ou théâtre', { demander: true }), art('autresortie', 'Autre', { demander: true })] },
       { id: 'maison', nom: 'À la maison', cache: false, articles: [art('verre', 'Verre', { alcool: true, prix: 0 })] },
       { id: 'courses', nom: 'Courses', cache: false, articles: [art('superu', 'Super U', { demander: true }), art('maximat', 'Maximat', { demander: true }), art('noel', 'Marché de Noël', { demander: true })] },
-      { id: 'tabac', nom: 'Tabac', cache: false, articles: [art('paquet', 'Paquet', { paquet: true }), art('jeux', 'Jeux', { demander: true })] }],
+      { id: 'tabac', nom: 'Tabac', cache: false, articles: [art('paquet', 'Paquet', { paquet: true }), art('clope', 'Clope', { clope: true, prix: 0 }), art('jeux', 'Jeux', { demander: true })] }],
     entrees: [],
     reglages: { repere: 50, catsBocal: ['alcool'], cigParPaquet: 20, envies: ENVIES.map(e => Object.assign({}, e)) }
   };
@@ -364,6 +368,12 @@ function charger() {
     const R = S.reglages;
     if (R.repere === 100 && R.catsBocal.length === 1 && R.catsBocal[0] === 'bar') { R.catsBocal = ['alcool']; R.repere = 50; }
     S.migAlcool = true;
+  }
+  // v8 : le bouton Clope (une cigarette fumée, déjà payée avec le paquet)
+  if (!S.migClope) {
+    const t = S.cats.find(c => c.id === 'tabac');
+    if (t && !t.articles.some(a => a.clope)) t.articles.splice(1, 0, art('clope', 'Clope', { clope: true, prix: 0 }));
+    S.migClope = true;
   }
 }
 function sauver() {
@@ -436,7 +446,7 @@ function depenseBocal(pred) {
 /* ---------- saisie ---------- */
 let catCourante = 'bar', derniere = null;
 function ajouter(c, a, prix, opts) {
-  const e = { id: uid(), t: Date.now(), cat: c.id, art: a.id, nom: a.nom, prix: arr(prix || 0), alcool: !!a.alcool, std: a.std || 1, paquet: !!a.paquet, offerte: false, carte: false };
+  const e = { id: uid(), t: Date.now(), cat: c.id, art: a.id, nom: a.nom, prix: arr(prix || 0), alcool: !!a.alcool, std: a.std || 1, paquet: !!a.paquet, clope: !!a.clope, offerte: false, carte: false };
   Object.assign(e, opts || {});
   if (e.offerte) e.prix = 0;
   S.entrees.push(e);
@@ -462,7 +472,7 @@ function rendreSaisie(flashId) {
   const horsCourses = arr(r.total - (r.parCat.courses ? r.parCat.courses.total : 0));
   $('#t-date').textContent = "Aujourd'hui · " + dateCourte(auj);
   $('#t-total').innerHTML = bigNum(horsCourses);
-  $('#t-verres').textContent = verresMots(r.verres);
+  $('#t-verres').textContent = verresMots(r.verres) + (r.clopes ? ' · ' + r.clopes + (r.clopes > 1 ? ' cigarettes' : ' cigarette') : '');
   $('#t-courses').textContent = r.parCat.courses ? '+ ' + euros(r.parCat.courses.total) + ' de courses' : '';
   const ym = auj.slice(0, 7);
   $('#mini').innerHTML = bocalSVG(depenseBocal(e => e.jour.startsWith(ym)), S.reglages.repere, true);
@@ -486,6 +496,7 @@ function rendreDerniere() {
   if (!e) { $('#derniere').innerHTML = ''; return; }
   const a = article(e.cat, e.art);
   const recents = a ? (a.recents || []) : [];
+  if (e.clope) { $('#derniere').innerHTML = `<div class="derniere"><div class="q"><span>Ajouté : <b>une cigarette</b></span><span>déjà payée</span></div><div class="chips"><button class="chip x" data-annul="1">annuler</button></div></div>`; return; }
   $('#derniere').innerHTML = `<div class="derniere"><div class="q"><span>Ajouté : <b>${esc(e.nom)}</b></span><span>${e.offerte ? 'offert' : euros(e.prix)}</span></div>
    <div class="chips">${recents.map(p => `<button class="chip${!e.offerte && p === e.prix ? ' on' : ''}" data-p="${p}">${euros(p).replace(' €', '')}</button>`).join('')}
    <button class="chip" data-autre="1">autre</button>
@@ -591,7 +602,7 @@ function rendreBilan() {
   if (vue.k !== 'jour') h += `<div class="bocal-wrap">${bocalSVG(dep, repere, false)}</div>`;
   const env = choisirEnvies(dep, R.envies);
   if (env.length) { const v = env[envieIdx % env.length]; h += `<div class="envie" id="envie">${esc(phraseEnvie(dep, v)).replace(/c&#39;est (.*)\.$/, "c'est <b>$1</b>.")}</div>`; }
-  h += `<div class="stats"><div><b>${r.bieres}</b>bière${r.bieres > 1 ? 's' : ''}</div><div><b>${r.verres}</b>verre${r.verres > 1 ? 's' : ''} d'alcool</div>${vue.k !== 'jour' ? `<div><b>${r.soirsAlcool}</b>soir${r.soirsAlcool > 1 ? 's' : ''} avec un verre</div>` : ''}<div><b>${r.cigarettes ? '~' + r.cigarettes : 0}</b>cigarettes</div></div>`;
+  h += `<div class="stats"><div><b>${r.bieres}</b>bière${r.bieres > 1 ? 's' : ''}</div><div><b>${r.verres}</b>verre${r.verres > 1 ? 's' : ''} d'alcool</div>${vue.k !== 'jour' ? `<div><b>${r.soirsAlcool}</b>soir${r.soirsAlcool > 1 ? 's' : ''} avec un verre</div>` : ''}<div><b>${r.cigarettes ? (r.estime ? '~' : '') + r.cigarettes : 0}</b>cigarette${r.cigarettes > 1 ? 's' : ''}${r.estime && r.cigarettes ? ' (estimées)' : ''}</div></div>`;
   // poste par poste : ce que coûte chaque article consommé (hors courses), du plus cher au moins cher
   const postes = [];
   for (const c of S.cats) {
@@ -601,11 +612,13 @@ function rendreBilan() {
       postes.push({ n, qte: v.qte, total: v.total, alcool: a ? a.alcool : false });
     }
   }
+  for (let i = postes.length - 1; i >= 0; i--) if (postes[i].total <= 0) postes.splice(i, 1);
   postes.sort((x, y) => y.total - x.total || y.qte - x.qte);
   if (postes.length) {
     const maxP = Math.max(...postes.map(p => p.total), 1);
     h += `<div class="bloc"><h3>Poste par poste</h3>${postes.map(p => `<div class="poste"><div class="pl"><span class="pn">${esc(p.n)} <small>× ${p.qte}</small></span><span class="pv">${euros(p.total)}</span></div><div class="pb"><i style="width:${Math.max(2, Math.round(p.total / maxP * 100))}%;background:${p.alcool ? 'var(--amber)' : 'var(--sand1)'}"></i></div></div>`).join('')}</div>`;
   }
+  if (r.paquets) h += `<div class="bloc"><div class="pas">${r.paquets} paquet${r.paquets > 1 ? 's' : ''}, ${euros(r.prixPaquets)}${r.clopes ? ', ' + r.clopes + ' cigarette' + (r.clopes > 1 ? 's' : '') + ' fumée' + (r.clopes > 1 ? 's' : '') : ''}. <b>Une cigarette coûte ${euros(r.prixClope)}.</b></div></div>`;
   // tout compris
   h += `<div class="bloc"><h3>Tout compris : ${euros(r.total)}</h3>`;
   const lignes = S.cats.filter(c => r.parCat[c.id]).map(c => {
@@ -736,13 +749,14 @@ function editerArticle(c, a, nouveau) {
    <label class="check"><input type="checkbox" id="fa-alc" ${a.alcool ? 'checked' : ''}>Contient de l'alcool (compte comme un verre)</label>
    <div class="champ"><label for="fa-std">Verres standard (demi = 1, pinte = 2)</label><input type="number" id="fa-std" min="0.5" step="0.5" value="${a.std || 1}"></div>
    <label class="check"><input type="checkbox" id="fa-paq" ${a.paquet ? 'checked' : ''}>C'est un paquet de cigarettes</label>
+   <label class="check"><input type="checkbox" id="fa-clo" ${a.clope ? 'checked' : ''}>C'est une cigarette fumée (comptée une par une)</label>
    <label class="check"><input type="checkbox" id="fa-cache" ${a.cache ? 'checked' : ''}>Masquer de l'écran de saisie</label>
    <div class="actions"><button class="btn danger" id="fa-sup">Supprimer</button><button class="btn plein" id="fa-ok">Enregistrer</button></div>`);
   $('#fa-ok').onclick = () => {
     a.nom = $('#fa-nom').value.trim() || a.nom;
     const p = $('#fa-prix').value; a.prix = p === '' ? null : arr(parseFloat(p) || 0);
     a.demander = $('#fa-dem').checked; a.alcool = $('#fa-alc').checked; a.std = parseFloat($('#fa-std').value) || 1;
-    a.paquet = $('#fa-paq').checked; a.cache = $('#fa-cache').checked;
+    a.paquet = $('#fa-paq').checked; a.clope = $('#fa-clo').checked; a.cache = $('#fa-cache').checked;
     sauver(); fermer(); rendreReglages(); toast('Enregistré');
   };
   $('#fa-sup').onclick = () => { if (!confirm('Supprimer « ' + a.nom + ' » ? Les saisies déjà faites restent dans le bilan.')) return; c.articles = c.articles.filter(x => x !== a); sauver(); fermer(); rendreReglages(); };
