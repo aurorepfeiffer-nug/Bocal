@@ -117,6 +117,7 @@ nav button.on{color:var(--foam);font-style:italic}
 .ronds i.f{background:var(--foam);border-color:var(--foam)}
 .ronds i.x{border:1.5px dashed var(--amber);background:rgba(240,167,58,.18)}
 .sem7{display:flex;justify-content:space-between;margin:8px 0 14px}.j7{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--mist)}.pt{width:26px;height:26px;border-radius:50%;background:rgba(247,234,210,.06)}.pt.v{background:var(--amber)}.pt.s{background:var(--sage)}.pt.f{background:transparent;border:1px dashed rgba(247,234,210,.18)}.pq{font-family:var(--sans);font-style:normal;font-size:13px;color:var(--mist);text-decoration:underline;margin-left:6px}
+.catl.alc{border-left:3px solid var(--amber);padding-left:12px;margin-left:-15px;background:rgba(240,167,58,.07)}.catl.alc .k{font-size:21px}.catl.alc .v{font-size:30px;color:var(--amber)}.toutcompris{font-size:14px;color:var(--mist);text-align:right;padding-top:10px}
 .poste{padding:9px 0}.pl{display:flex;justify-content:space-between;align-items:baseline}.pn{font-family:var(--serif);font-size:19px}.pn small{font-family:var(--sans);font-size:14px;color:var(--mist);margin-left:4px}.pv{font-family:var(--serif);font-weight:300;font-size:20px;white-space:nowrap}.pb{height:6px;background:rgba(247,234,210,.06);border-radius:3px;margin-top:6px;overflow:hidden}.pb i{display:block;height:100%;border-radius:3px}
 .pas{font-family:var(--serif);font-style:italic;font-weight:300;font-size:18px;color:var(--mist);line-height:1.5}
 .pas b{color:var(--foam);font-weight:500;font-style:normal}
@@ -437,6 +438,7 @@ function charger() {
   }
   // v12 : l'onglet s'appelle « Au bar ou au café » (seulement s'il n'a pas été renommé à la main)
   const cb = S.cats.find(c => c.id === 'bar'); if (cb && cb.nom === 'Au bar ou dehors') cb.nom = 'Au bar ou au café';
+  if (!S.migAlcool2) { const R = S.reglages; if (R.catsBocal.length === 1 && R.catsBocal[0] === 'bar') R.catsBocal = ['alcool']; S.migAlcool2 = true; }
   // v9 : les récompenses
   if (!S.migRecomp) {
     S.bons = S.bons || []; S.fetes = S.fetes || [];
@@ -565,16 +567,17 @@ function rendreSaisie(flashId) {
   const hier = ajouterJours(vrai, -1);
   const motJour = !jourSaisie ? "aujourd'hui" : auj === hier ? 'hier' : 'ce jour-là';
   const r = resume(S.entrees, e => e.jour === auj, S.reglages.cigParPaquet);
-  const horsCourses = arr(r.total - (r.parCat.courses ? r.parCat.courses.total : 0));
+  const enAlcool = resume(S.entrees, e => e.jour === auj && e.alcool, S.reglages.cigParPaquet).total;
+  const autres = arr(r.total - enAlcool - (r.parCat.courses ? r.parCat.courses.total : 0));
   $('#t-date').textContent = (!jourSaisie ? "Aujourd'hui" : auj === hier ? 'Hier' : 'Le') + ' · ' + dateCourte(auj);
   $('#j-suiv').disabled = !jourSaisie;
   $('#j-prec').disabled = auj <= ajouterJours(vrai, -60);
   $('#jour-titre').textContent = motJour.charAt(0).toUpperCase() + motJour.slice(1);
   $('#passe').innerHTML = jourSaisie ? `<div class="passe"><span>Tu ajoutes pour <b>${auj === hier ? 'hier' : 'le'} ${dateCourte(auj)}</b></span><button id="retour-auj">Revenir à aujourd'hui</button></div>` : '';
   if (jourSaisie) $('#retour-auj').onclick = () => { jourSaisie = null; derniere = null; rendreSaisie(); };
-  $('#t-total').innerHTML = bigNum(horsCourses);
+  $('#t-total').innerHTML = bigNum(enAlcool);
   $('#t-verres').textContent = verresMots(r.verres) + (r.clopes ? ' · ' + r.clopes + (r.clopes > 1 ? ' cigarettes' : ' cigarette') : '');
-  $('#t-courses').textContent = r.parCat.courses ? '+ ' + euros(r.parCat.courses.total) + ' de courses' : '';
+  $('#t-courses').textContent = [autres > 0 ? '+ ' + euros(autres) + ' hors alcool' : '', r.parCat.courses ? '+ ' + euros(r.parCat.courses.total) + ' de courses' : ''].filter(Boolean).join(' · ');
   const ep = epargne(S.entrees, S.bons, vrai);
   $('#t-epargne').textContent = ep > 0 ? euros(ep, true) + ' mis de côté' : '';
   const ym = auj.slice(0, 7);
@@ -734,14 +737,15 @@ function rendreBilan() {
     h += `<div class="bloc"><h3>Poste par poste</h3>${postes.map(p => `<div class="poste"><div class="pl"><span class="pn">${esc(p.n)} <small>× ${p.qte}</small></span><span class="pv">${euros(p.total)}</span></div><div class="pb"><i style="width:${Math.max(2, Math.round(p.total / maxP * 100))}%;background:${p.alcool ? 'var(--amber)' : 'var(--sand1)'}"></i></div></div>`).join('')}</div>`;
   }
   if (r.paquets) h += `<div class="bloc"><div class="pas">${r.paquets} paquet${r.paquets > 1 ? 's' : ''}, ${euros(r.prixPaquets)}${r.clopes ? ', ' + r.clopes + ' cigarette' + (r.clopes > 1 ? 's' : '') + ' fumée' + (r.clopes > 1 ? 's' : '') : ''}. <b>Une cigarette coûte ${euros(r.prixClope)}.</b></div></div>`;
-  // tout compris
-  h += `<div class="bloc"><h3>Tout compris : ${euros(r.total)}</h3>`;
-  const lignes = S.cats.filter(c => r.parCat[c.id]).map(c => {
-    const pc = r.parCat[c.id];
-    const det = Object.entries(pc.articles).sort((x, y) => y[1].qte - x[1].qte).map(([n, v]) => v.qte + ' ' + (v.qte > 1 ? pluriel(n.toLowerCase()) : n.toLowerCase())).join(' · ');
-    return `<div class="catl"><span class="k">${esc(c.nom)}<small>${esc(det)}</small></span><span class="v">${euros(pc.total)}</span></div>`;
-  });
-  h += lignes.length ? lignes.join('') : '<div class="vide">Aucune saisie sur cette période.</div>';
+  // où part l'argent : chaque famille à part, l'alcool d'abord, jamais mélangé aux courses
+  const somme = f => arr(S.entrees.filter(e => f(e) && B.pred(Object.assign({}, e, { jour: cleJour(e.t) }))).reduce((x, e) => x + (e.prix || 0), 0));
+  const detail = f => { const o = {}; S.entrees.filter(e => f(e) && B.pred(Object.assign({}, e, { jour: cleJour(e.t) }))).forEach(e => { o[e.nom] = (o[e.nom] || 0) + (e.qte || 1); }); return Object.entries(o).sort((x, y) => y[1] - x[1]).map(([n, q]) => q + ' ' + (q > 1 ? pluriel(n.toLowerCase()) : n.toLowerCase())).join(' · '); };
+  const fams = [{ nom: 'En alcool', f: e => e.alcool, alc: true }];
+  S.cats.forEach(c => fams.push({ nom: c.id === 'bar' ? c.nom + ', sans alcool' : c.nom, f: e => e.cat === c.id && !e.alcool }));
+  const lignesF = fams.map(F => ({ F, v: somme(F.f), d: detail(F.f) })).filter(x => x.v > 0 || (x.F.alc && x.d));
+  h += `<div class="bloc"><h3>Où part l'argent</h3>`;
+  h += lignesF.length ? lignesF.map(x => `<div class="catl${x.F.alc ? ' alc' : ''}"><span class="k">${esc(x.F.nom)}<small>${esc(x.d)}</small></span><span class="v">${euros(x.v)}</span></div>`).join('') : '<div class="vide">Aucune saisie sur cette période.</div>';
+  if (lignesF.length > 1) h += `<div class="toutcompris">Tout compris : ${euros(r.total)}</div>`;
   h += '</div>';
   if (vue.k === 'jour') {
     const l = S.entrees.filter(e => cleJour(e.t) === B.ref).sort((a, b) => a.t - b.t);
