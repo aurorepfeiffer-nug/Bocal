@@ -602,7 +602,7 @@ function rendreDerniere() {
   if (e.clope) { $('#derniere').innerHTML = `<div class="derniere"><div class="q"><span>Ajouté : <b>une cigarette</b></span><span>déjà payée</span></div><div class="chips"><button class="chip x" data-annul="1">annuler</button></div></div>`; return; }
   $('#derniere').innerHTML = `<div class="derniere"><div class="q"><span>Ajouté : <b>${esc(e.nom)}</b></span><span>${e.offerte ? 'offert' : euros(e.prix)}</span></div>
    <div class="chips">${recents.map(p => `<button class="chip${!e.offerte && p === e.prix ? ' on' : ''}" data-p="${p}">${euros(p).replace(' €', '')}</button>`).join('')}
-   <button class="chip" data-autre="1">autre</button>
+   <button class="chip" data-autre="1">autre prix</button>
    <button class="chip t${e.cb ? ' on' : ''}" data-cb="1">${esc(nomCB())}</button>
    <button class="chip t${e.carte ? ' on' : ''}" data-carte="1">ma carte</button>
    <button class="chip x" data-annul="1">annuler</button></div></div>`;
