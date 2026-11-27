@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Le Bocal</title>
+<meta name="theme-color" content="#0f1d33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Le Bocal">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f1d33'/><rect x='34' y='14' width='32' height='9' rx='2' fill='none' stroke='%23f7ead2' stroke-width='4'/><path d='M36 27 C22 30 20 38 20 48 V78 C20 84 24 88 30 88 H70 C76 88 80 84 80 78 V48 C80 38 78 30 64 27 Z' fill='none' stroke='%23f7ead2' stroke-width='4'/><path d='M22 62 Q36 58 50 62 T78 62 V78 C78 84 74 86 70 86 H30 C26 86 22 84 22 78Z' fill='%23e6d2a6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300;1,9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--night:#0f1d33;--night2:#18294a;--night3:#1d3058;--amber:#f0a73a;--foam:#f7ead2;--mist:#8ea1bf;--sand1:#efdfbb;--sand2:#cdb078;--coral:#e98a6b;--sage:#7fb7a4;--line:rgba(247,234,210,.12);
+ --serif:'Fraunces',Georgia,'Times New Roman',serif;--sans:'Work Sans',-apple-system,system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--night);color:var(--foam);font-family:var(--sans);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select{font:inherit;color:var(--foam);background:rgba(247,234,210,.06);border:1px solid var(--line);border-radius:4px;padding:10px 12px;width:100%}
+input:focus{outline:1px solid var(--amber)}
+.app{max-width:480px;margin:0 auto;min-height:100%;background:radial-gradient(120% 50% at 50% 0%,var(--night2),var(--night) 70%);position:relative}
+.screen{display:none;padding:calc(env(safe-area-inset-top) + 26px) 0 calc(env(safe-area-inset-bottom) + 90px)}
+.screen.on{display:block}
+.lab{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mist)}
+.num{font-family:var(--serif);font-weight:300;font-size:64px;line-height:1;white-space:nowrap}
+.num i{font-style:italic;font-size:.5em;color:var(--amber);margin-left:2px}
+.ital{font-family:var(--serif);font-style:italic;font-weight:300;color:var(--mist);font-size:15px}
+.pad{padding:0 26px}
+.nowrap{white-space:nowrap}
+/* navigation */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;background:linear-gradient(transparent,var(--night) 35%);padding:18px 0 calc(env(safe-area-inset-bottom) + 14px)}
+nav .in{max-width:480px;width:100%;display:flex;justify-content:space-around}
+nav button{font-family:var(--serif);font-size:16px;color:var(--mist);padding:6px 14px}
+nav button.on{color:var(--foam);font-style:italic}
+/* saisir */
+.top{display:flex;gap:18px;align-items:flex-end;padding:0 26px}
+.top .info{flex:1;min-width:0}
+.courses-du-jour{font-size:12px;color:var(--mist);margin-top:4px}
+.intro{margin:16px 26px 0;padding:14px 16px;border:1px solid var(--line);border-radius:6px;font-size:13px;line-height:1.5;color:var(--mist)}
+.intro b{color:var(--foam);font-weight:500}
+.intro button{margin-top:8px;color:var(--amber);font-size:13px}
+.cats{display:flex;gap:20px;padding:22px 26px 6px;font-family:var(--serif);font-size:17px;color:var(--mist);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cats button{padding-bottom:3px;border-bottom:1px solid transparent;color:var(--mist);flex:none}
+.cats button.on{color:var(--foam);font-style:italic;border-bottom-color:var(--amber)}
+.items{padding:4px 26px}
+.item{display:flex;width:100%;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);text-align:left;gap:12px}
+.item .n{font-family:var(--serif);font-size:22px;font-weight:300;line-height:1.15}
+.item .n small{display:block;font-family:var(--sans);font-size:11px;color:var(--mist);margin-top:2px}
+.item .p{font-size:15px;font-weight:500;color:var(--amber);border:1px solid rgba(240,167,58,.5);border-radius:2px;padding:9px 10px;min-width:84px;text-align:center;white-space:nowrap;flex:none;transition:background .2s,color .2s}
+.item .p.ask{color:var(--mist);border-color:var(--line);font-size:13px}
+.item.flash .p{background:var(--amber);color:var(--night)}
+.item:active .n{opacity:.7}
+.derniere{margin:14px 26px 0;padding:12px 14px;border:1px solid rgba(240,167,58,.35);border-radius:6px;background:rgba(240,167,58,.05)}
+.derniere .q{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--mist)}
+.derniere .q b{font-family:var(--serif);font-weight:500;font-size:17px;color:var(--foam)}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.chip{padding:8px 11px;border:1px solid rgba(247,234,210,.25);font-size:13px;border-radius:2px;white-space:nowrap}
+.chip.on{border-color:var(--amber);color:var(--amber)}
+.chip.t{border-style:dashed;color:var(--mist)}
+.chip.t.on{border-style:solid;color:var(--amber);border-color:var(--amber)}
+.chip.x{color:var(--coral);border-color:rgba(233,138,107,.4)}
+.jour{padding:26px 26px 0}
+.jour h3,.bloc h3{font-family:var(--serif);font-weight:300;font-style:italic;font-size:18px;margin-bottom:6px}
+.ligne{display:flex;width:100%;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;text-align:left}
+.ligne .h{color:var(--mist);width:46px;flex:none;font-variant-numeric:tabular-nums}
+.ligne .m{flex:1}
+.ligne .m em{font-style:normal;font-size:11px;color:var(--mist);margin-left:6px}
+.ligne .v{white-space:nowrap;font-variant-numeric:tabular-nums}
+.vide{color:var(--mist);font-size:13px;font-style:italic;font-family:var(--serif);padding:8px 0}
+/* bilan */
+.per{display:flex;align-items:center;justify-content:space-between;padding:0 26px}
+.per .tabs{display:flex;gap:16px}
+.per .tabs button{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);padding:4px 0;border-bottom:1px solid transparent}
+.per .tabs button.on{color:var(--foam);border-bottom-color:var(--amber)}
+.per .fl{display:flex;gap:4px}
+.per .fl button{width:34px;height:34px;font-size:20px;color:var(--mist);border:1px solid var(--line);border-radius:50%}
+.per .fl button:disabled{opacity:.25}
+.tete{text-align:center;padding:22px 26px 0}
+.tete .num{margin-top:6px}
+.cap{font-family:var(--serif);font-style:italic;color:var(--coral);font-size:15px;margin-top:4px}
+.bocal-wrap{display:flex;justify-content:center;padding-top:10px}
+.bocal-wrap svg .sable{transition:transform 1.3s cubic-bezier(.2,.8,.2,1)}
+.envie{margin:14px 30px 0;font-family:var(--serif);font-style:italic;font-weight:300;font-size:16px;color:var(--mist);text-align:center;cursor:pointer;min-height:22px}
+.envie b{color:var(--foam);font-weight:500}
+.stats{display:flex;justify-content:space-between;margin:20px 30px 0;padding-top:12px;border-top:1px solid var(--line)}
+.stats div{font-size:11px;color:var(--mist)}
+.stats b{display:block;font-family:var(--serif);font-weight:300;font-size:28px;color:var(--foam);line-height:1.1}
+.bloc{margin:26px 26px 0}
+.catl{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.catl .k{font-family:var(--serif);font-size:17px}
+.catl .k small{display:block;font-family:var(--sans);font-size:11px;color:var(--mist);margin-top:2px}
+.catl .v{font-family:var(--serif);font-weight:300;font-size:22px;white-space:nowrap}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:4px}
+.cal .h{font-size:10px;font-weight:600;color:var(--mist);text-align:center}
+.cal .d{aspect-ratio:1;border-radius:6px;background:rgba(247,234,210,.06);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:rgba(247,234,210,.35);opacity:0;transform:scale(.6);animation:pop .35s ease-out forwards}
+.cal .d.e{background:transparent;animation:none}
+.cal .d.v1{background:rgba(240,167,58,.35);color:var(--foam)}
+.cal .d.v2{background:rgba(240,167,58,.68);color:var(--night)}
+.cal .d.v3{background:var(--amber);color:var(--night);font-weight:600}
+.cal .d.s{background:var(--sage);color:var(--night)}
+.cal .d.f{background:transparent;border:1px dashed rgba(247,234,210,.15)}
+.cal .d.today{outline:1.5px solid var(--foam);outline-offset:1px}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+.leg{display:flex;gap:12px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--mist)}
+.leg span{display:flex;align-items:center;gap:5px}
+.leg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.sante{margin-top:6px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--mist);line-height:1.5}
+.sante b{color:var(--foam);font-weight:500}
+.ronds{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 6px}
+.ronds i{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(247,234,210,.3)}
+.ronds i.f{background:var(--foam);border-color:var(--foam)}
+.ronds i.x{border:1.5px dashed var(--coral);background:rgba(233,138,107,.25)}
+.pas{font-family:var(--serif);font-style:italic;font-weight:300;font-size:15px;color:var(--mist);line-height:1.5}
+.pas b{color:var(--foam);font-weight:500;font-style:normal}
+.btn{display:inline-block;padding:11px 16px;border:1px solid var(--amber);color:var(--amber);border-radius:3px;font-size:14px;font-weight:500}
+.btn.plein{background:var(--amber);color:var(--night)}
+.btn.discret{border-color:var(--line);color:var(--mist)}
+.btn.danger{border-color:rgba(233,138,107,.5);color:var(--coral)}
+/* réglages */
+.reg h2{font-family:var(--serif);font-weight:300;font-size:30px;padding:0 26px}
+.reg .bloc p.aide{font-size:12px;color:var(--mist);line-height:1.5;margin:6px 0 10px}
+.champ{display:flex;align-items:center;gap:10px;margin:8px 0}
+.champ label{flex:1;font-size:14px}
+.champ input[type=number]{width:110px;text-align:right}
+.check{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px}
+.check input{width:20px;height:20px;accent-color:var(--amber)}
+.rl{display:flex;width:100%;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);text-align:left;font-size:15px}
+.rl small{color:var(--mist);font-size:12px}
+.rl.cache{opacity:.45}
+.cath{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px}
+.cath b{font-family:var(--serif);font-weight:500;font-size:18px}
+.cath button{font-size:12px;color:var(--mist)}
+.ajout{font-size:13px;color:var(--amber);padding:10px 0}
+/* feuilles */
+.voile{position:fixed;inset:0;background:rgba(5,10,20,.6);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.voile.on{display:flex}
+.feuille{width:100%;max-width:480px;background:var(--night3);border-radius:18px 18px 0 0;padding:20px 22px calc(env(safe-area-inset-bottom) + 20px);max-height:92vh;overflow-y:auto;animation:monte .25s ease-out}
+@keyframes monte{from{transform:translateY(40px);opacity:.4}}
+.feuille h4{font-family:var(--serif);font-weight:300;font-size:24px}
+.feuille .sous{font-size:12px;color:var(--mist);margin-top:2px}
+.ecran{font-family:var(--serif);font-weight:300;font-size:52px;text-align:center;margin:14px 0 6px;min-height:60px}
+.ecran i{font-style:italic;font-size:26px;color:var(--amber)}
+.clavier{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.clavier button{padding:15px 0;font-size:22px;font-family:var(--serif);border:1px solid var(--line);border-radius:6px;background:rgba(247,234,210,.03)}
+.clavier button:active{background:rgba(240,167,58,.2)}
+.actions{display:flex;gap:10px;margin-top:16px}
+.actions .btn{flex:1;text-align:center}
+.alerte{background:var(--coral);color:var(--night);font-size:13px;padding:10px 26px;display:none}
+.alerte.on{display:block}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translateX(-50%);background:var(--foam);color:var(--night);font-size:13px;padding:9px 14px;border-radius:20px;z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="alerte" id="alerte">Ce navigateur n'arrive pas à enregistrer tes données. Ouvre l'appli depuis l'écran d'accueil.</div>
+
+ <section class="screen on" id="s-saisir">
+  <div class="top">
+   <div id="mini"></div>
+   <div class="info">
+    <div class="lab" id="t-date">Aujourd'hui</div>
+    <div class="num" id="t-total">0<i>€</i></div>
+    <div class="ital" id="t-verres">aucun verre</div>
+    <div class="courses-du-jour" id="t-courses"></div>
+   </div>
+  </div>
+  <div id="intro"></div>
+  <div class="cats" id="cats"></div>
+  <div class="items" id="items"></div>
+  <div id="derniere"></div>
+  <div class="jour"><h3>Aujourd'hui</h3><div id="jour"></div></div>
+ </section>
+
+ <section class="screen" id="s-bilan">
+  <div class="per">
+   <div class="tabs" id="b-tabs"><button data-k="jour">Jour</button><button data-k="semaine">Semaine</button><button data-k="mois" class="on">Mois</button></div>
+   <div class="fl"><button id="b-prec" aria-label="Avant">‹</button><button id="b-suiv" aria-label="Après">›</button></div>
+  </div>
+  <div id="bilan"></div>
+ </section>
+
+ <section class="screen reg" id="s-reglages">
+  <h2>Réglages</h2>
+  <div id="reglages"></div>
+ </section>
+</div>
+
+<nav><div class="in">
+ <button data-s="saisir" class="on">Saisir</button>
+ <button data-s="bilan">Bilan</button>
+ <button data-s="reglages">Réglages</button>
+</div></nav>
+
+<div class="voile" id="voile"><div class="feuille" id="feuille"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fichier" accept="application/json,.json" style="display:none">
+
+<script>
+// LOGIQUE-DEBUT
+const H5 = 5 * 3600 * 1000;
+function deux(n) { return String(n).padStart(2, '0'); }
+function cleDate(d) { return d.getFullYear() + '-' + deux(d.getMonth() + 1) + '-' + deux(d.getDate()); }
+function dateDeCle(k) { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d, 12); }
+// La journée va de 5 h à 5 h : un verre à 2 h du matin appartient à la soirée de la veille.
+function cleJour(ts) { return cleDate(new Date(ts - H5)); }
+function cleSemaine(k) { const d = dateDeCle(k); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return cleDate(d); }
+function ajouterJours(k, n) { const d = dateDeCle(k); d.setDate(d.getDate() + n); return cleDate(d); }
+function arr(x) { return Math.round(x * 100) / 100; }
+const RE_BIERE = /bi[eè]re|pinte|demi/i;
+function resume(entrees, pred, cigParPaquet) {
+  const r = { total: 0, verres: 0, std: 0, bieres: 0, paquets: 0, cigarettes: 0, soirsAlcool: 0, sorties: 0, parCat: {}, n: 0 };
+  const joursAlcool = new Set(), joursSortie = new Set();
+  for (const e0 of entrees) {
+    const e = Object.assign({}, e0, { jour: cleJour(e0.t) });
+    if (!pred(e)) continue;
+    const q = e.qte || 1;
+    r.n++;
+    r.total += e.prix || 0;
+    if (e.alcool) { r.verres += q; r.std += (e.std || 1) * q; joursAlcool.add(e.jour); if (RE_BIERE.test(e.nom)) r.bieres += q; }
+    if (e.paquet) r.paquets += q;
+    if (e.cat === 'bar' || e.cat === 'autrement') joursSortie.add(e.jour);
+    const c = r.parCat[e.cat] || (r.parCat[e.cat] = { total: 0, qte: 0, articles: {} });
+    c.total += e.prix || 0; c.qte += q;
+    const a = c.articles[e.nom] || (c.articles[e.nom] = { qte: 0, total: 0 });
+    a.qte += q; a.total += e.prix || 0;
+  }
+  r.total = arr(r.total);
+  for (const k in r.parCat) { r.parCat[k].total = arr(r.parCat[k].total); for (const a in r.parCat[k].articles) r.parCat[k].articles[a].total = arr(r.parCat[k].articles[a].total); }
+  r.cigarettes = r.paquets * (cigParPaquet || 20);
+  r.soirsAlcool = joursAlcool.size;
+  r.sorties = joursSortie.size;
+  return r;
+}
+function calendrier(entrees, ym) {
+  const c = {};
+  for (const e of entrees) {
+    const j = cleJour(e.t);
+    if (!j.startsWith(ym)) continue;
+    const d = c[j] || (c[j] = { verres: 0, autrement: false, total: 0 });
+    if (e.alcool) d.verres += e.qte || 1;
+    if (e.cat === 'autrement') d.autrement = true;
+    d.total += e.prix || 0;
+  }
+  return c;
+}
+function santeSemaine(entrees, cleRef) {
+  const lundi = cleSemaine(cleRef);
+  const parJour = {};
+  for (const e of entrees) {
+    if (!e.alcool) continue;
+    const j = cleJour(e.t);
+    if (j < lundi || j > cleRef) continue;
+    parJour[j] = (parJour[j] || 0) + (e.std || 1) * (e.qte || 1);
+  }
+  let std = 0, maxJour = 0;
+  for (const j in parJour) { std += parJour[j]; maxJour = Math.max(maxJour, parJour[j]); }
+  let ecoules = 0, k = lundi;
+  while (k <= cleRef && ecoules < 7) { ecoules++; k = ajouterJours(k, 1); }
+  return { std, maxJour, joursSans: ecoules - Object.keys(parJour).length, joursEcoules: ecoules };
+}
+function euros(x, entier) {
+  const neg = x < 0; x = Math.abs(x);
+  let s = entier ? String(Math.round(x)) : x.toFixed(2);
+  let [e, d] = s.split('.');
+  e = e.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return (neg ? '-' : '') + e + (d ? ',' + d : '') + ' €';
+}
+const MOTS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
+function nombre(n, g) { if (n === 1) return g === 'f' ? 'une' : 'un'; return n <= 10 ? MOTS[n] : String(n); }
+function pluriel(nom) {
+  const i = nom.indexOf(' ');
+  const m = i < 0 ? nom : nom.slice(0, i), reste = i < 0 ? '' : nom.slice(i);
+  let p;
+  if (/[sxz]$/i.test(m)) p = m;
+  else if (/(eu|au)$/i.test(m)) p = m + 'x';
+  else if (/al$/i.test(m)) p = m.slice(0, -2) + 'aux';
+  else p = m + 's';
+  return p + reste;
+}
+function choisirEnvies(montant, envies) {
+  return envies.filter(v => v.prix > 0).map(v => Object.assign({}, v, { n: Math.floor(montant / v.prix) })).filter(v => v.n >= 1 && v.n <= 10);
+}
+function phraseEnvie(montant, v) {
+  const n = Math.floor(montant / v.prix);
+  return euros(montant, true) + ", c'est " + nombre(n, v.g) + ' ' + (n > 1 ? pluriel(v.nom) : v.nom) + '.';
+}
+// LOGIQUE-FIN
+
+/* ---------- données ---------- */
+const CLE = 'bocal-v1';
+const ENVIES = [
+  { nom: 'nuit au bord de la mer', g: 'f', prix: 80 }, { nom: 'resto à deux', g: 'm', prix: 60 },
+  { nom: 'place de concert', g: 'f', prix: 45 }, { nom: 'séance de ciné', g: 'f', prix: 12 },
+  { nom: 'livre', g: 'm', prix: 20 }, { nom: 'massage', g: 'm', prix: 60 },
+  { nom: 'plein pour le van', g: 'm', prix: 90 }, { nom: 'jeu PS5', g: 'm', prix: 70 },
+  { nom: 'cours de chant', g: 'm', prix: 40 }, { nom: 'soirée au théâtre', g: 'f', prix: 30 }];
+function art(id, nom, o) { return Object.assign({ id, nom, prix: null, recents: [], alcool: false, std: 1, paquet: false, demander: false, cache: false }, o || {}); }
+function depart() {
+  return {
+    v: 1, intro: true,
+    cats: [
+      { id: 'bar', nom: 'Au bar ou dehors', cache: false, articles: [art('biere', 'Bière', { alcool: true }), art('cafe', 'Café'), art('tarte', 'Tarte flambée'), art('bretzel', 'Bretzel'), art('soft', 'Soft ou sans alcool'), art('autrebar', 'Autre', { demander: true })] },
+      { id: 'autrement', nom: 'Sortir autrement', cache: false, articles: [art('resto', 'Resto', { demander: true }), art('cine', 'Ciné', { demander: true }), art('concert', 'Concert ou théâtre', { demander: true }), art('autresortie', 'Autre', { demander: true })] },
+      { id: 'maison', nom: 'À la maison', cache: false, articles: [art('verre', 'Verre', { alcool: true, prix: 0 })] },
+      { id: 'courses', nom: 'Courses', cache: false, articles: [art('superu', 'Super U', { demander: true }), art('maximat', 'Maximat', { demander: true }), art('noel', 'Marché de Noël', { demander: true })] },
+      { id: 'tabac', nom: 'Tabac', cache: false, articles: [art('paquet', 'Paquet', { paquet: true }), art('jeux', 'Jeux', { demander: true })] }],
+    entrees: [],
+    reglages: { repere: 100, catsBocal: ['bar'], cigParPaquet: 20, envies: ENVIES.map(e => Object.assign({}, e)) }
+  };
+}
+let S, stockageOk = true;
+function charger() {
+  try { const t = localStorage.getItem(CLE); S = t ? JSON.parse(t) : depart(); }
+  catch (e) { S = depart(); stockageOk = false; }
+  if (!S.reglages) S.reglages = depart().reglages;
+}
+function sauver() {
+  try { localStorage.setItem(CLE, JSON.stringify(S)); stockageOk = true; }
+  catch (e) { stockageOk = false; }
+  document.getElementById('alerte').classList.toggle('on', !stockageOk);
+}
+charger();
+
+/* ---------- outils ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const JOURS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+function aujourdhui() { return cleJour(Date.now()); }
+const MOIS_C = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+function dateCourte(k) { const d = dateDeCle(k); return JOURS[d.getDay()] + ' ' + d.getDate() + ' ' + MOIS_C[d.getMonth()]; }
+function heure(ts) { const d = new Date(ts); return deux(d.getHours()) + ':' + deux(d.getMinutes()); }
+function cat(id) { return S.cats.find(c => c.id === id); }
+function article(cid, aid) { const c = cat(cid); return c && c.articles.find(a => a.id === aid); }
+function verresMots(n) { return n === 0 ? 'aucun verre' : nombre(n, 'm') + (n > 1 ? ' verres' : ' verre'); }
+function bigNum(x) { const e = Math.round(x); const exact = Math.abs(x - e) < 0.005; return (exact ? String(e).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : x.toFixed(2).replace('.', ',')) + '<i>€</i>'; }
+let toastT;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1800); }
+function feuille(html) { $('#feuille').innerHTML = html; $('#voile').classList.add('on'); }
+function fermer() { $('#voile').classList.remove('on'); }
+$('#voile').addEventListener('click', e => { if (e.target.id === 'voile') fermer(); });
+
+/* ---------- le bocal ---------- */
+const CORPS = 'M64 40 C34 44 24 58 24 86 V262 C24 280 36 290 54 290 H136 C154 290 166 280 166 262 V86 C166 58 156 44 126 40 Z';
+let nb = 0;
+function bocalSVG(montant, repere, mini) {
+  nb++;
+  const haut = 70, bas = 290, plage = bas - haut;
+  const echelle = repere > 0 ? Math.max(repere * 1.25, montant * 1.04) : Math.max(montant * 1.25, 40);
+  const niveau = bas - plage * Math.min(1, montant / echelle);
+  const yRep = repere > 0 ? bas - plage * (repere / echelle) : null;
+  const vague = y => `M0 ${y} Q47 ${y - 8} 95 ${y} T190 ${y}`;
+  const corail = yRep !== null && montant > repere ? `<path d="${vague(niveau)} V${yRep} H0Z" fill="#e98a6b"/>` : '';
+  const sw = mini ? 6 : 1.6;
+  const vide = montant <= 0 ? 'opacity="0"' : '';
+  const decal = mini ? 0 : bas - niveau + 10;
+  return `<svg ${mini ? 'width="48" height="76" viewBox="0 0 190 300"' : 'width="236" height="300" viewBox="0 0 236 300"'} aria-hidden="true">
+   <defs><clipPath id="c${nb}"><path d="${CORPS}"/></clipPath>
+   <linearGradient id="s${nb}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#efdfbb"/><stop offset="1" stop-color="#cdb078"/></linearGradient>
+   <pattern id="g${nb}" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#9c7f4c" opacity=".45"/><circle cx="4.5" cy="4" r=".6" fill="#fff" opacity=".45"/></pattern></defs>
+   <g clip-path="url(#c${nb})"><g class="sable" ${vide} style="transform:translateY(${decal}px)" data-final="0">
+    <path d="${vague(niveau)} V300 H0Z" fill="url(#s${nb})"/>${corail}
+    ${mini ? '' : `<path d="${vague(niveau)} V300 H0Z" fill="url(#g${nb})"/><path d="M70 270 q6 -10 12 0 z" fill="#f7ead2" opacity=".8"/><path d="M118 250 l3 6 6 1 -5 4 1 6 -5 -3 -5 3 1 -6 -5 -4 6 -1z" fill="#e9b7a6" opacity=".85"/>`}
+   </g></g>
+   ${yRep !== null && !mini ? `<line x1="26" y1="${yRep}" x2="164" y2="${yRep}" stroke="#f7ead2" stroke-width="1.4" stroke-dasharray="5 4" opacity=".75"/>
+   <text x="172" y="${yRep - 2}" fill="#8ea1bf" font-family="Work Sans,sans-serif" font-size="11">repère</text>
+   <text x="172" y="${yRep + 12}" fill="#8ea1bf" font-family="Work Sans,sans-serif" font-size="11">${euros(repere, true)}</text>` : ''}
+   ${yRep !== null && mini ? `<line x1="30" y1="${yRep}" x2="160" y2="${yRep}" stroke="#f7ead2" stroke-width="5" stroke-dasharray="14 10" opacity=".6"/>` : ''}
+   <path d="${CORPS}" fill="rgba(247,234,210,.04)" stroke="#f7ead2" stroke-width="${sw}"/>
+   <rect x="58" y="10" width="74" height="16" rx="3" fill="none" stroke="#f7ead2" stroke-width="${sw}"/>
+   <path d="M64 26 V40 M126 26 V40" stroke="#f7ead2" stroke-width="${sw}"/>
+  </svg>`;
+}
+function animerSable(root) {
+  requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll('.sable').forEach(g => g.style.transform = 'translateY(0)')));
+}
+function depenseBocal(pred) {
+  const cs = S.reglages.catsBocal;
+  return resume(S.entrees, e => pred(e) && cs.includes(e.cat), S.reglages.cigParPaquet).total;
+}
+
+/* ---------- saisie ---------- */
+let catCourante = 'bar', derniere = null;
+function ajouter(c, a, prix, opts) {
+  const e = { id: uid(), t: Date.now(), cat: c.id, art: a.id, nom: a.nom, prix: arr(prix || 0), alcool: !!a.alcool, std: a.std || 1, paquet: !!a.paquet, offerte: false, carte: false };
+  Object.assign(e, opts || {});
+  if (e.offerte) e.prix = 0;
+  S.entrees.push(e);
+  if (!e.offerte) memoriserPrix(a, e.prix);
+  derniere = e.id;
+  sauver();
+  return e;
+}
+function memoriserPrix(a, p) {
+  if (a.alcool && p === 0 && a.prix !== 0) return;
+  a.prix = p;
+  a.recents = [p].concat((a.recents || []).filter(x => x !== p)).slice(0, 3);
+}
+function toucherArticle(a) {
+  const c = cat(catCourante);
+  if (a.demander || a.prix === null) return pave(c, a);
+  ajouter(c, a, a.prix);
+  rendreSaisie(a.id);
+}
+function rendreSaisie(flashId) {
+  const auj = aujourdhui();
+  const r = resume(S.entrees, e => e.jour === auj, S.reglages.cigParPaquet);
+  const horsCourses = arr(r.total - (r.parCat.courses ? r.parCat.courses.total : 0));
+  $('#t-date').textContent = "Aujourd'hui · " + dateCourte(auj);
+  $('#t-total').innerHTML = bigNum(horsCourses);
+  $('#t-verres').textContent = verresMots(r.verres);
+  $('#t-courses').textContent = r.parCat.courses ? '+ ' + euros(r.parCat.courses.total) + ' de courses' : '';
+  const ym = auj.slice(0, 7);
+  $('#mini').innerHTML = bocalSVG(depenseBocal(e => e.jour.startsWith(ym)), S.reglages.repere, true);
+  $('#intro').innerHTML = S.intro ? `<div class="intro"><b>Le Bocal</b> garde la trace de ce que tu dépenses au bar, au tabac et en courses, et de ce que tu consommes. Un toucher par article. Rien ne sonne, et tes données restent sur ce téléphone.<br><button id="intro-ok">Commencer</button></div>` : '';
+  if (S.intro) $('#intro-ok').onclick = () => { S.intro = false; sauver(); rendreSaisie(); };
+  const cats = S.cats.filter(c => !c.cache);
+  if (!cats.find(c => c.id === catCourante)) catCourante = cats[0] ? cats[0].id : null;
+  $('#cats').innerHTML = cats.map(c => `<button data-c="${c.id}" class="${c.id === catCourante ? 'on' : ''}">${esc(c.nom)}</button>`).join('');
+  const c = cat(catCourante);
+  $('#items').innerHTML = c ? c.articles.filter(a => !a.cache).map(a => {
+    const q = r.parCat[c.id] && r.parCat[c.id].articles[a.nom] ? r.parCat[c.id].articles[a.nom].qte : 0;
+    const p = a.demander || a.prix === null ? `<span class="p ask">${a.prix === null || a.demander ? 'montant' : ''}</span>` : `<span class="p">${euros(a.prix)}</span>`;
+    return `<button class="item${a.id === flashId ? ' flash' : ''}" data-a="${a.id}"><span class="n">${esc(a.nom)}${q ? `<small>${q} aujourd'hui</small>` : ''}</span>${p}</button>`;
+  }).join('') : '';
+  if (flashId) setTimeout(() => { const el = document.querySelector('.item.flash'); if (el) el.classList.remove('flash'); }, 450);
+  rendreDerniere();
+  rendreJour(auj);
+}
+function rendreDerniere() {
+  const e = S.entrees.find(x => x.id === derniere);
+  if (!e) { $('#derniere').innerHTML = ''; return; }
+  const a = article(e.cat, e.art);
+  const recents = a ? (a.recents || []) : [];
+  $('#derniere').innerHTML = `<div class="derniere"><div class="q"><span>Ajouté : <b>${esc(e.nom)}</b></span><span>${e.offerte ? 'offert' : euros(e.prix)}</span></div>
+   <div class="chips">${recents.map(p => `<button class="chip${!e.offerte && p === e.prix ? ' on' : ''}" data-p="${p}">${euros(p).replace(' €', '')}</button>`).join('')}
+   <button class="chip" data-autre="1">autre</button>
+   ${e.alcool || e.prix > 0 ? `<button class="chip t${e.offerte ? ' on' : ''}" data-off="1">offert</button>` : ''}
+   <button class="chip t${e.carte ? ' on' : ''}" data-carte="1">ma carte</button>
+   <button class="chip x" data-annul="1">annuler</button></div></div>`;
+}
+function rendreJour(auj) {
+  const l = S.entrees.filter(e => cleJour(e.t) === auj).sort((a, b) => b.t - a.t);
+  $('#jour').innerHTML = l.length ? l.map(e => `<button class="ligne" data-e="${e.id}"><span class="h">${heure(e.t)}</span><span class="m">${esc(e.nom)}${e.offerte ? '<em>offert</em>' : ''}${e.carte ? '<em>ma carte</em>' : ''}</span><span class="v">${e.offerte ? '0 €' : euros(e.prix)}</span></button>`).join('') : '<div class="vide">Rien pour l\'instant.</div>';
+}
+$('#cats').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (!b) return; catCourante = b.dataset.c; derniere = null; rendreSaisie(); });
+$('#items').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; const a = article(catCourante, b.dataset.a); if (a) toucherArticle(a); });
+$('#derniere').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  const e = S.entrees.find(x => x.id === derniere); if (!e) return;
+  const a = article(e.cat, e.art);
+  if (b.dataset.p !== undefined) { e.prix = Number(b.dataset.p); e.offerte = false; if (a) memoriserPrix(a, e.prix); }
+  else if (b.dataset.off) { e.offerte = !e.offerte; if (e.offerte) { e.prixAvant = e.prix; e.prix = 0; } else { e.prix = e.prixAvant || (a && a.prix) || 0; } }
+  else if (b.dataset.carte) e.carte = !e.carte;
+  else if (b.dataset.autre) { return editer(e); }
+  else if (b.dataset.annul) { S.entrees = S.entrees.filter(x => x.id !== e.id); derniere = null; toast('Saisie annulée'); }
+  sauver(); rendreSaisie();
+});
+$('#jour').addEventListener('click', ev => { const b = ev.target.closest('[data-e]'); if (!b) return; const e = S.entrees.find(x => x.id === b.dataset.e); if (e) editer(e); });
+
+/* pavé de montant : nouvelle saisie ou correction */
+let pv = null;
+function pave(c, a) {
+  pv = { c, a, txt: a.prix ? String(a.prix).replace('.', ',') : '', offerte: false, carte: false, e: null };
+  dessinerPave();
+}
+function editer(e) {
+  const c = cat(e.cat) || { id: e.cat, nom: '' };
+  const a = article(e.cat, e.art) || { id: e.art, nom: e.nom, recents: [], alcool: e.alcool, prix: e.prix };
+  pv = { c, a, txt: e.offerte ? '' : String(e.prix).replace('.', ','), offerte: !!e.offerte, carte: !!e.carte, e };
+  dessinerPave();
+}
+function valeurPave() { const v = parseFloat((pv.txt || '0').replace(',', '.')); return isNaN(v) ? 0 : v; }
+function dessinerPave() {
+  const { a, e } = pv;
+  const rec = (a.recents || []);
+  feuille(`<h4>${esc(a.nom)}</h4><div class="sous">${e ? 'Saisie de ' + heure(e.t) + ', ' + dateCourte(cleJour(e.t)) : esc(pv.c.nom)}</div>
+   <div class="ecran">${pv.offerte ? 'offert' : (pv.txt || '0') + '<i>€</i>'}</div>
+   ${rec.length ? `<div class="chips" style="justify-content:center">${rec.map(p => `<button class="chip" data-p="${p}">${euros(p)}</button>`).join('')}</div>` : ''}
+   <div class="clavier">${['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', '⌫'].map(k => `<button data-k="${k}">${k}</button>`).join('')}</div>
+   <div class="chips" style="justify-content:center;margin-top:14px">
+    ${a.alcool || !a.demander ? `<button class="chip t${pv.offerte ? ' on' : ''}" data-off="1">offert</button>` : ''}
+    <button class="chip t${pv.carte ? ' on' : ''}" data-carte="1">payé avec ma carte</button></div>
+   <div class="actions">${e ? '<button class="btn danger" data-sup="1">Supprimer</button>' : '<button class="btn discret" data-x="1">Fermer</button>'}<button class="btn plein" data-ok="1">${e ? 'Corriger' : 'Ajouter'}</button></div>`);
+}
+$('#feuille').addEventListener('click', ev => {
+  if (!pv) return;
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.k) {
+    const k = b.dataset.k; pv.offerte = false;
+    if (k === '⌫') pv.txt = pv.txt.slice(0, -1);
+    else if (k === ',') { if (!pv.txt.includes(',')) pv.txt = (pv.txt || '0') + ','; }
+    else if (!/,\d\d$/.test(pv.txt) && pv.txt.length < 7) pv.txt = (pv.txt === '0' ? '' : pv.txt) + k;
+  } else if (b.dataset.p) { pv.txt = String(b.dataset.p).replace('.', ','); pv.offerte = false; }
+  else if (b.dataset.off) pv.offerte = !pv.offerte;
+  else if (b.dataset.carte) pv.carte = !pv.carte;
+  else if (b.dataset.x) { pv = null; return fermer(); }
+  else if (b.dataset.sup) { S.entrees = S.entrees.filter(x => x.id !== pv.e.id); if (derniere === pv.e.id) derniere = null; pv = null; sauver(); fermer(); toast('Saisie supprimée'); return rendreTout(); }
+  else if (b.dataset.ok) {
+    const v = valeurPave();
+    if (pv.e) {
+      pv.e.prix = pv.offerte ? 0 : arr(v); pv.e.offerte = pv.offerte; pv.e.carte = pv.carte;
+      const a = article(pv.e.cat, pv.e.art); if (a && !pv.offerte) memoriserPrix(a, pv.e.prix);
+      sauver(); toast('Corrigé');
+    } else {
+      if (!pv.offerte && v <= 0 && !(pv.a.alcool)) { toast('Indique un montant'); return; }
+      ajouter(pv.c, pv.a, v, { offerte: pv.offerte, carte: pv.carte });
+      toast(pv.a.nom + ' ajouté');
+    }
+    const flash = pv.e ? null : pv.a.id;
+    pv = null; fermer(); return rendreTout(flash);
+  } else return;
+  dessinerPave();
+});
+
+/* ---------- bilan ---------- */
+let vue = { k: 'mois', ref: null };
+function bornes() {
+  const ref = vue.ref || aujourdhui();
+  if (vue.k === 'jour') return { pred: e => e.jour === ref, titre: dateCourte(ref), prec: ajouterJours(ref, -1), suiv: ajouterJours(ref, 1), ref };
+  if (vue.k === 'semaine') { const l = cleSemaine(ref), f = ajouterJours(l, 6); return { pred: e => e.jour >= l && e.jour <= f, titre: 'semaine du ' + dateDeCle(l).getDate() + ' ' + MOIS[dateDeCle(l).getMonth()], prec: ajouterJours(l, -7), suiv: ajouterJours(l, 7), ref: f }; }
+  const ym = ref.slice(0, 7), d = dateDeCle(ym + '-15');
+  const p = new Date(d); p.setMonth(p.getMonth() - 1); const s = new Date(d); s.setMonth(s.getMonth() + 1);
+  return { pred: e => e.jour.startsWith(ym), titre: MOIS[d.getMonth()] + ' ' + d.getFullYear(), ym, prec: cleDate(p), suiv: cleDate(s), ref: ym + '-' + deux(new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()) };
+}
+let envieIdx = 0;
+function rendreBilan() {
+  const B = bornes(), R = S.reglages, auj = aujourdhui();
+  document.querySelectorAll('#b-tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === vue.k));
+  $('#b-suiv').disabled = B.suiv > auj && vue.k !== 'mois' ? true : (vue.k === 'mois' && B.suiv.slice(0, 7) > auj.slice(0, 7));
+  const r = resume(S.entrees, B.pred, R.cigParPaquet);
+  const noms = R.catsBocal.map(id => cat(id)).filter(Boolean).map(c => c.nom.toLowerCase());
+  const dep = depenseBocal(B.pred);
+  const repere = vue.k === 'mois' ? R.repere : vue.k === 'semaine' ? (R.repere ? Math.round(R.repere * 12 / 52) : 0) : 0;
+  let h = `<div class="tete"><div class="lab">${esc(B.titre)}, ${esc(noms.join(' et ') || 'rien de choisi')}</div><div class="num">${bigNum(dep)}</div>
+    ${repere > 0 && dep > repere ? `<div class="cap">repère passé de ${euros(dep - repere, true)}</div>` : ''}</div>`;
+  if (vue.k !== 'jour') h += `<div class="bocal-wrap">${bocalSVG(dep, repere, false)}</div>`;
+  const env = choisirEnvies(dep, R.envies);
+  if (env.length) { const v = env[envieIdx % env.length]; h += `<div class="envie" id="envie">${esc(phraseEnvie(dep, v)).replace(/c&#39;est (.*)\.$/, "c'est <b>$1</b>.")}</div>`; }
+  h += `<div class="stats"><div><b>${r.bieres}</b>bière${r.bieres > 1 ? 's' : ''}</div><div><b>${r.verres}</b>verre${r.verres > 1 ? 's' : ''} d'alcool</div>${vue.k !== 'jour' ? `<div><b>${r.soirsAlcool}</b>soir${r.soirsAlcool > 1 ? 's' : ''} avec alcool</div>` : ''}<div><b>${r.cigarettes ? '~' + r.cigarettes : 0}</b>cigarettes</div></div>`;
+  // tout compris
+  h += `<div class="bloc"><h3>Tout compris : ${euros(r.total)}</h3>`;
+  const lignes = S.cats.filter(c => r.parCat[c.id]).map(c => {
+    const pc = r.parCat[c.id];
+    const det = Object.entries(pc.articles).sort((x, y) => y[1].qte - x[1].qte).map(([n, v]) => v.qte + ' ' + (v.qte > 1 ? pluriel(n.toLowerCase()) : n.toLowerCase())).join(' · ');
+    return `<div class="catl"><span class="k">${esc(c.nom)}<small>${esc(det)}</small></span><span class="v">${euros(pc.total)}</span></div>`;
+  });
+  h += lignes.length ? lignes.join('') : '<div class="vide">Aucune saisie sur cette période.</div>';
+  h += '</div>';
+  if (vue.k === 'jour') {
+    const l = S.entrees.filter(e => cleJour(e.t) === B.ref).sort((a, b) => a.t - b.t);
+    if (l.length) h += `<div class="bloc"><h3>Le fil de la journée</h3>${l.map(e => `<div class="ligne"><span class="h">${heure(e.t)}</span><span class="m">${esc(e.nom)}${e.offerte ? '<em>offert</em>' : ''}</span><span class="v">${euros(e.prix)}</span></div>`).join('')}</div>`;
+  }
+  if (vue.k === 'mois') h += calendrierHTML(B.ym, auj);
+  // un pas
+  if (vue.k === 'mois') {
+    const d = dateDeCle(B.ym + '-15'); d.setMonth(d.getMonth() - 1);
+    const ymP = cleDate(d).slice(0, 7);
+    const rp = resume(S.entrees, e => e.jour.startsWith(ymP), R.cigParPaquet);
+    const aut = r.parCat.autrement;
+    let pas = '';
+    if (rp.n) pas += `<b>${r.soirsAlcool}</b> soir${r.soirsAlcool > 1 ? 's' : ''} avec alcool, contre ${rp.soirsAlcool} en ${MOIS[d.getMonth()]}. `;
+    if (aut) pas += 'Sorties autrement : ' + Object.entries(aut.articles).map(([n, v]) => v.qte + ' ' + (v.qte > 1 ? pluriel(n.toLowerCase()) : n.toLowerCase())).join(', ') + '.';
+    if (pas) h += `<div class="bloc"><h3>Un pas après l'autre</h3><div class="pas">${pas}</div></div>`;
+  }
+  // santé
+  const refS = B.ref > auj ? auj : B.ref;
+  const s = santeSemaine(S.entrees, refS);
+  const ronds = Array.from({ length: Math.max(10, s.std) }, (_, i) => `<i class="${i < Math.min(s.std, 10) ? 'f' : i < s.std ? 'x' : ''}"></i>`).join('');
+  h += `<div class="bloc"><h3>Repère santé</h3><div class="sante">Semaine du ${dateDeCle(cleSemaine(refS)).getDate()} ${MOIS[dateDeCle(cleSemaine(refS)).getMonth()]} : <b>${s.std} verre${s.std > 1 ? 's' : ''} standard</b>, ${s.joursSans} jour${s.joursSans > 1 ? 's' : ''} sans sur ${s.joursEcoules}.<div class="ronds">${ronds}</div>En France, le repère est de 10 verres standard maximum par semaine, 2 par jour au plus, avec des jours sans. Un demi de bière, c'est 1 verre standard, une pinte 2. <span style="opacity:.7">(Santé publique France, 2017)</span></div></div>`;
+  // à rembourser
+  const dus = S.entrees.filter(e => e.carte && !e.rembourse && !e.offerte);
+  if (dus.length) {
+    const tot = arr(dus.reduce((x, e) => x + e.prix, 0));
+    h += `<div class="bloc"><h3>Payé avec ma carte</h3><div class="pas">À me faire rembourser : <b>${euros(tot)}</b> (${dus.length} saisie${dus.length > 1 ? 's' : ''}).</div><div style="margin-top:10px"><button class="btn" id="rembourse">C'est remboursé</button></div></div>`;
+  }
+  $('#bilan').innerHTML = h;
+  animerSable($('#bilan'));
+  const ev = $('#envie'); if (ev) ev.onclick = () => { envieIdx++; rendreBilan(); };
+  const rb = $('#rembourse'); if (rb) rb.onclick = () => { if (!confirm('Marquer ' + dus.length + ' saisie(s) comme remboursée(s) ?')) return; dus.forEach(e => e.rembourse = true); sauver(); rendreBilan(); };
+}
+function calendrierHTML(ym, auj) {
+  const c = calendrier(S.entrees, ym);
+  const [y, m] = ym.split('-').map(Number);
+  const premier = (new Date(y, m - 1, 1).getDay() + 6) % 7, n = new Date(y, m, 0).getDate();
+  let g = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(x => `<div class="h">${x}</div>`).join('');
+  for (let i = 0; i < premier; i++) g += '<div class="d e"></div>';
+  for (let d = 1; d <= n; d++) {
+    const k = ym + '-' + deux(d), j = c[k];
+    let cl = '';
+    if (k > auj) cl = 'f';
+    else if (j && j.verres) cl = j.verres >= 3 ? 'v3' : 'v' + j.verres;
+    else if (j && j.autrement) cl = 's';
+    if (k === auj) cl += ' today';
+    g += `<div class="d ${cl}" style="animation-delay:${d * 40}ms">${d}</div>`;
+  }
+  return `<div class="bloc"><h3>Le mois, soir après soir</h3><div class="cal">${g}</div><div class="leg"><span><i style="background:rgba(240,167,58,.35)"></i>1 verre</span><span><i style="background:rgba(240,167,58,.68)"></i>2</span><span><i style="background:#f0a73a"></i>3 et plus</span><span><i style="background:var(--sage)"></i>sortie autrement</span></div></div>`;
+}
+$('#b-tabs').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; vue.k = b.dataset.k; rendreBilan(); });
+$('#b-prec').onclick = () => { vue.ref = bornes().prec; envieIdx = 0; rendreBilan(); };
+$('#b-suiv').onclick = () => { const s = bornes().suiv, a = aujourdhui(); vue.ref = s > a ? a : s; envieIdx = 0; rendreBilan(); };
+
+/* ---------- réglages ---------- */
+function rendreReglages() {
+  const R = S.reglages;
+  let h = `<div class="bloc"><h3>Mon repère</h3><p class="aide">Le trait sur le bocal. Facultatif : mets 0 pour ne pas en avoir. Il compte par mois ; sur une semaine, l'appli prend la part d'une semaine.</p>
+   <div class="champ"><label for="r-rep">Par mois</label><input type="number" id="r-rep" inputmode="decimal" min="0" value="${R.repere || 0}"></div>
+   <p class="aide">Ce qui remplit le bocal :</p>
+   ${S.cats.map(c => `<label class="check"><input type="checkbox" data-bc="${c.id}" ${R.catsBocal.includes(c.id) ? 'checked' : ''}>${esc(c.nom)}</label>`).join('')}</div>`;
+  h += `<div class="bloc"><h3>Mes articles</h3><p class="aide">Touche un article pour changer son nom, son prix, ou dire s'il contient de l'alcool.</p>`;
+  for (const c of S.cats) {
+    h += `<div class="cath"><b>${esc(c.nom)}</b><span><button data-rc="${c.id}">renommer</button> · <button data-hc="${c.id}">${c.cache ? 'afficher' : 'masquer'}</button></span></div>`;
+    h += c.articles.map(a => `<button class="rl${a.cache ? ' cache' : ''}" data-ea="${c.id}|${a.id}"><span>${esc(a.nom)} ${a.alcool ? `<small>· alcool, ${a.std} verre${a.std > 1 ? 's' : ''} std</small>` : ''}${a.paquet ? '<small>· paquet</small>' : ''}</span><small>${a.demander ? 'montant à chaque fois' : a.prix === null ? 'prix au 1er toucher' : euros(a.prix)}</small></button>`).join('');
+    h += `<button class="ajout" data-aa="${c.id}">+ ajouter un article</button>`;
+  }
+  h += `<div style="margin-top:8px"><button class="ajout" id="add-cat">+ ajouter une catégorie</button></div></div>`;
+  h += `<div class="bloc"><h3>Ce qu'on pourrait faire à la place</h3><p class="aide">Les envies du bilan. Une phrase est tirée au hasard parmi celles que le montant permet.</p>
+   ${R.envies.map((v, i) => `<button class="rl" data-ev="${i}"><span>${nombre(1, v.g)} ${esc(v.nom)}</span><small>${euros(v.prix, true)}</small></button>`).join('')}
+   <button class="ajout" id="add-env">+ ajouter une envie</button></div>`;
+  h += `<div class="bloc"><h3>Cigarettes</h3><div class="champ"><label for="r-cig">Cigarettes par paquet</label><input type="number" id="r-cig" min="1" value="${R.cigParPaquet}"></div></div>`;
+  h += `<div class="bloc"><h3>Sauvegarde</h3><p class="aide">Tes données sont seulement sur ce téléphone. Si tu supprimes l'appli ou les données de Safari, elles disparaissent. Garde une sauvegarde de temps en temps (dans Fichiers ou par mail).</p>
+   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="exp">Enregistrer une sauvegarde</button><button class="btn discret" id="imp">Restaurer</button></div>
+   <p class="aide" style="margin-top:14px">${S.entrees.length} saisie${S.entrees.length > 1 ? 's' : ''} enregistrée${S.entrees.length > 1 ? 's' : ''}.</p></div>`;
+  h += `<div class="bloc"><p class="aide">Le Bocal v1 · marche hors ligne, sans compte, sans abonnement.</p></div>`;
+  $('#reglages').innerHTML = h;
+}
+$('#reglages').addEventListener('change', ev => {
+  const t = ev.target, R = S.reglages;
+  if (t.id === 'r-rep') R.repere = Math.max(0, parseFloat(t.value) || 0);
+  else if (t.id === 'r-cig') R.cigParPaquet = Math.max(1, parseInt(t.value) || 20);
+  else if (t.dataset.bc) { const id = t.dataset.bc; R.catsBocal = t.checked ? [...new Set(R.catsBocal.concat(id))] : R.catsBocal.filter(x => x !== id); }
+  sauver(); toast('Enregistré');
+});
+$('#reglages').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.rc) { const c = cat(b.dataset.rc); const n = prompt('Nom de la catégorie', c.nom); if (n && n.trim()) { c.nom = n.trim(); sauver(); rendreReglages(); } }
+  else if (b.dataset.hc) { const c = cat(b.dataset.hc); c.cache = !c.cache; sauver(); rendreReglages(); }
+  else if (b.dataset.ea) { const [ci, ai] = b.dataset.ea.split('|'); editerArticle(cat(ci), article(ci, ai)); }
+  else if (b.dataset.aa) { const c = cat(b.dataset.aa); const a = art(uid(), 'Nouvel article'); c.articles.push(a); sauver(); editerArticle(c, a, true); }
+  else if (b.id === 'add-cat') { const n = prompt('Nom de la nouvelle catégorie'); if (n && n.trim()) { S.cats.push({ id: uid(), nom: n.trim(), cache: false, articles: [] }); sauver(); rendreReglages(); } }
+  else if (b.dataset.ev) editerEnvie(Number(b.dataset.ev));
+  else if (b.id === 'add-env') { S.reglages.envies.push({ nom: 'nouvelle envie', g: 'f', prix: 50 }); sauver(); editerEnvie(S.reglages.envies.length - 1); }
+  else if (b.id === 'exp') exporter();
+  else if (b.id === 'imp') $('#fichier').click();
+});
+function editerArticle(c, a, nouveau) {
+  pv = null;
+  feuille(`<h4>${nouveau ? 'Nouvel article' : esc(a.nom)}</h4><div class="sous">${esc(c.nom)}</div>
+   <div class="champ" style="margin-top:14px"><label>Nom</label></div><input id="fa-nom" value="${esc(a.nom)}">
+   <div class="champ"><label for="fa-prix">Prix habituel (vide = demandé au 1er toucher)</label><input type="number" id="fa-prix" inputmode="decimal" step="0.01" value="${a.prix === null ? '' : a.prix}"></div>
+   <label class="check"><input type="checkbox" id="fa-dem" ${a.demander ? 'checked' : ''}>Taper le montant à chaque fois</label>
+   <label class="check"><input type="checkbox" id="fa-alc" ${a.alcool ? 'checked' : ''}>Contient de l'alcool (compte comme un verre)</label>
+   <div class="champ"><label for="fa-std">Verres standard (demi = 1, pinte = 2)</label><input type="number" id="fa-std" min="0.5" step="0.5" value="${a.std || 1}"></div>
+   <label class="check"><input type="checkbox" id="fa-paq" ${a.paquet ? 'checked' : ''}>C'est un paquet de cigarettes</label>
+   <label class="check"><input type="checkbox" id="fa-cache" ${a.cache ? 'checked' : ''}>Masquer de l'écran de saisie</label>
+   <div class="actions"><button class="btn danger" id="fa-sup">Supprimer</button><button class="btn plein" id="fa-ok">Enregistrer</button></div>`);
+  $('#fa-ok').onclick = () => {
+    a.nom = $('#fa-nom').value.trim() || a.nom;
+    const p = $('#fa-prix').value; a.prix = p === '' ? null : arr(parseFloat(p) || 0);
+    a.demander = $('#fa-dem').checked; a.alcool = $('#fa-alc').checked; a.std = parseFloat($('#fa-std').value) || 1;
+    a.paquet = $('#fa-paq').checked; a.cache = $('#fa-cache').checked;
+    sauver(); fermer(); rendreReglages(); toast('Enregistré');
+  };
+  $('#fa-sup').onclick = () => { if (!confirm('Supprimer « ' + a.nom + ' » ? Les saisies déjà faites restent dans le bilan.')) return; c.articles = c.articles.filter(x => x !== a); sauver(); fermer(); rendreReglages(); };
+}
+function editerEnvie(i) {
+  const v = S.reglages.envies[i];
+  feuille(`<h4>Une envie</h4><div class="sous">Écris-la au singulier : « nuit au bord de la mer ».</div>
+   <div class="champ" style="margin-top:14px"><label>Un ou une ?</label><select id="fe-g" style="width:110px"><option value="f" ${v.g === 'f' ? 'selected' : ''}>une</option><option value="m" ${v.g === 'm' ? 'selected' : ''}>un</option></select></div>
+   <input id="fe-nom" value="${esc(v.nom)}">
+   <div class="champ"><label for="fe-prix">Prix</label><input type="number" id="fe-prix" inputmode="decimal" value="${v.prix}"></div>
+   <div class="actions"><button class="btn danger" id="fe-sup">Supprimer</button><button class="btn plein" id="fe-ok">Enregistrer</button></div>`);
+  $('#fe-ok').onclick = () => { v.nom = $('#fe-nom').value.trim() || v.nom; v.g = $('#fe-g').value; v.prix = Math.max(1, parseFloat($('#fe-prix').value) || v.prix); sauver(); fermer(); rendreReglages(); };
+  $('#fe-sup').onclick = () => { S.reglages.envies.splice(i, 1); sauver(); fermer(); rendreReglages(); };
+}
+async function exporter() {
+  const nom = 'le-bocal-' + aujourdhui() + '.json';
+  const blob = new Blob([JSON.stringify(S)], { type: 'application/json' });
+  try {
+    const f = new File([blob], nom, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Sauvegarde du Bocal' }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const u = URL.createObjectURL(blob), l = document.createElement('a'); l.href = u; l.download = nom; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000);
+}
+$('#fichier').addEventListener('change', async ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d || !Array.isArray(d.entrees) || !Array.isArray(d.cats)) throw new Error('format');
+    if (!confirm('Remplacer les données de ce téléphone par cette sauvegarde (' + d.entrees.length + ' saisies) ?')) return;
+    S = d; if (!S.reglages) S.reglages = depart().reglages; sauver(); rendreTout(); toast('Sauvegarde restaurée');
+  } catch (e) { alert("Ce fichier n'est pas une sauvegarde du Bocal."); }
+  ev.target.value = '';
+});
+
+/* ---------- navigation ---------- */
+let ecran = 'saisir';
+function rendreTout(flash) { if (ecran === 'saisir') rendreSaisie(flash); else if (ecran === 'bilan') rendreBilan(); else rendreReglages(); }
+document.querySelector('nav').addEventListener('click', e => {
+  const b = e.target.closest('[data-s]'); if (!b) return;
+  ecran = b.dataset.s;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 's-' + ecran));
+  if (ecran === 'bilan') { vue.ref = null; envieIdx = Math.floor(Math.random() * 10); }
+  if (ecran !== 'saisir') derniere = null;
+  window.scrollTo(0, 0);
+  rendreTout();
+});
+// au retour dans l'appli (le lendemain par exemple), on remet la date à jour
+document.addEventListener('visibilitychange', () => { if (!document.hidden) rendreTout(); });
+sauver();
+rendreTout();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body></html>
