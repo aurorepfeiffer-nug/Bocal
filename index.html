@@ -349,7 +349,7 @@ function depart() {
       { id: 'courses', nom: 'Courses', cache: false, articles: [art('superu', 'Super U', { demander: true }), art('maximat', 'Maximat', { demander: true }), art('noel', 'Marché de Noël', { demander: true })] },
       { id: 'tabac', nom: 'Tabac', cache: false, articles: [art('paquet', 'Paquet', { paquet: true }), art('jeux', 'Jeux', { demander: true })] }],
     entrees: [],
-    reglages: { repere: 100, catsBocal: ['bar'], cigParPaquet: 20, envies: ENVIES.map(e => Object.assign({}, e)) }
+    reglages: { repere: 50, catsBocal: ['alcool'], cigParPaquet: 20, envies: ENVIES.map(e => Object.assign({}, e)) }
   };
 }
 let S, stockageOk = true;
@@ -357,6 +357,12 @@ function charger() {
   try { const t = localStorage.getItem(CLE); S = t ? JSON.parse(t) : depart(); }
   catch (e) { S = depart(); stockageOk = false; }
   if (!S.reglages) S.reglages = depart().reglages;
+  // v6 : le bocal compte l'alcool seulement. On ne change que les réglages de départ jamais touchés.
+  if (!S.migAlcool) {
+    const R = S.reglages;
+    if (R.repere === 100 && R.catsBocal.length === 1 && R.catsBocal[0] === 'bar') { R.catsBocal = ['alcool']; R.repere = 50; }
+    S.migAlcool = true;
+  }
 }
 function sauver() {
   try { localStorage.setItem(CLE, JSON.stringify(S)); stockageOk = true; }
@@ -421,7 +427,8 @@ function animerSable(root) {
 }
 function depenseBocal(pred) {
   const cs = S.reglages.catsBocal;
-  return resume(S.entrees, e => pred(e) && cs.includes(e.cat), S.reglages.cigParPaquet).total;
+  // « alcool » = tous les articles marqués alcool, où qu'ils soient (bières, vin chaud...), sans les cafés ni les bretzels
+  return resume(S.entrees, e => pred(e) && ((cs.includes('alcool') && e.alcool) || cs.includes(e.cat)), S.reglages.cigParPaquet).total;
 }
 
 /* ---------- saisie ---------- */
@@ -574,7 +581,7 @@ function rendreBilan() {
   document.querySelectorAll('#b-tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === vue.k));
   $('#b-suiv').disabled = B.suiv > auj && vue.k !== 'mois' ? true : (vue.k === 'mois' && B.suiv.slice(0, 7) > auj.slice(0, 7));
   const r = resume(S.entrees, B.pred, R.cigParPaquet);
-  const noms = R.catsBocal.map(id => cat(id)).filter(Boolean).map(c => c.nom.toLowerCase());
+  const noms = R.catsBocal.map(id => id === 'alcool' ? "en alcool" : cat(id) ? cat(id).nom.toLowerCase() : null).filter(Boolean);
   const dep = depenseBocal(B.pred);
   const repere = vue.k === 'mois' ? R.repere : vue.k === 'semaine' ? (R.repere ? Math.round(R.repere * 12 / 52) : 0) : 0;
   let h = `<div class="tete"><div class="lab">${esc(B.titre)}, ${esc(noms.join(' et ') || 'rien de choisi')}</div><div class="num">${bigNum(dep)}</div>
@@ -666,6 +673,7 @@ function rendreReglages() {
   let h = `<div class="bloc"><h3>Mon repère</h3><p class="aide">Le trait sur le bocal. Facultatif : mets 0 pour ne pas en avoir. Il compte par mois ; sur une semaine, l'appli prend la part d'une semaine.</p>
    <div class="champ"><label for="r-rep">Par mois</label><input type="number" id="r-rep" inputmode="decimal" min="0" value="${R.repere || 0}"></div>
    <p class="aide">Ce qui remplit le bocal :</p>
+   <label class="check"><input type="checkbox" data-bc="alcool" ${R.catsBocal.includes('alcool') ? 'checked' : ''}>L'alcool seulement (bières, verres, partout)</label>
    ${S.cats.map(c => `<label class="check"><input type="checkbox" data-bc="${c.id}" ${R.catsBocal.includes(c.id) ? 'checked' : ''}>${esc(c.nom)}</label>`).join('')}</div>`;
   h += `<div class="bloc"><h3>Mes articles</h3><p class="aide">Touche un article pour changer son nom, son prix, ou dire s'il contient de l'alcool.</p>`;
   for (const c of S.cats) {
