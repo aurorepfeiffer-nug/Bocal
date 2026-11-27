@@ -995,7 +995,7 @@ const splash = document.getElementById('splash');
 let splashFini = false;
 function finSplash() { if (splashFini) return; splashFini = true; splash.classList.add('out'); setTimeout(() => { splash.remove(); surprises(); }, 500); }
 splash.addEventListener('click', finSplash);
-setTimeout(finSplash, matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 3300);
+setTimeout(finSplash, matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 6500);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body></html>
