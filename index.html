@@ -409,7 +409,7 @@ function depart() {
   return {
     v: 1, intro: true,
     cats: [
-      { id: 'bar', nom: 'Au bar ou dehors', cache: false, articles: [art('biere', 'Bière', { alcool: true }), art('cafe', 'Café'), art('tarte', 'Tarte flambée'), art('bretzel', 'Bretzel'), art('soft', 'Soft ou sans alcool'), art('autrebar', 'Autre', { demander: true })] },
+      { id: 'bar', nom: 'Au bar ou au café', cache: false, articles: [art('biere', 'Bière', { alcool: true }), art('cafe', 'Café'), art('tarte', 'Tarte flambée'), art('bretzel', 'Bretzel'), art('soft', 'Soft ou sans alcool'), art('autrebar', 'Autre', { demander: true })] },
       { id: 'autrement', nom: 'Sortir autrement', cache: false, articles: [art('resto', 'Resto', { demander: true }), art('cine', 'Ciné', { demander: true }), art('concert', 'Concert ou théâtre', { demander: true }), art('autresortie', 'Autre', { demander: true })] },
       { id: 'maison', nom: 'À la maison', cache: false, articles: [art('verre', 'Verre', { alcool: true, prix: 0 })] },
       { id: 'courses', nom: 'Courses', cache: false, articles: [art('superu', 'Super U', { demander: true }), art('maximat', 'Maximat', { demander: true }), art('noel', 'Marché de Noël', { demander: true })] },
@@ -435,6 +435,8 @@ function charger() {
     if (t && !t.articles.some(a => a.clope)) t.articles.splice(1, 0, art('clope', 'Clope', { clope: true, prix: 0 }));
     S.migClope = true;
   }
+  // v12 : l'onglet s'appelle « Au bar ou au café » (seulement s'il n'a pas été renommé à la main)
+  const cb = S.cats.find(c => c.id === 'bar'); if (cb && cb.nom === 'Au bar ou dehors') cb.nom = 'Au bar ou au café';
   // v9 : les récompenses
   if (!S.migRecomp) {
     S.bons = S.bons || []; S.fetes = S.fetes || [];
