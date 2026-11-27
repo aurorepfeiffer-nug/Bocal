@@ -157,6 +157,26 @@ nav button.on{color:var(--foam);font-style:italic}
 .alerte.on{display:block}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translateX(-50%);background:var(--foam);color:var(--night);font-size:16px;padding:9px 14px;border-radius:20px;z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1}
+.coq{opacity:0;animation:coqTombe .6s ease-out forwards}
+@keyframes coqTombe{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:none}}
+.epargne{color:var(--sage);font-family:var(--serif);font-style:italic;font-size:17px;margin-top:4px}
+.tirelire{margin:18px 26px 0;padding:14px 16px;border:1px solid rgba(127,183,164,.35);border-radius:8px;background:rgba(127,183,164,.06)}
+.tirelire .m{font-family:var(--serif);font-weight:300;font-size:34px;color:var(--sage);line-height:1;margin-top:4px}
+.tirelire .m i{font-style:italic;font-size:.55em;color:var(--sage)}
+.tirelire p{font-size:14px;color:var(--mist);margin-top:6px;line-height:1.45}
+.bon{margin:16px 0 4px;padding:20px 18px;border:1.5px dashed var(--sand2);border-radius:10px;background:rgba(239,223,187,.07);text-align:center}
+.bon .t{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--sand2)}
+.bon .n{font-family:var(--serif);font-size:26px;margin:8px 0 2px}
+.bon .v{font-family:var(--serif);font-weight:300;font-size:40px;color:var(--amber)}
+.bon .d{font-size:14px;color:var(--mist);margin-top:6px}
+.cookie-phrase{font-family:var(--serif);font-style:italic;font-weight:300;font-size:22px;line-height:1.35;margin:14px 0 10px}
+.bonl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.bonl .k{font-family:var(--serif);font-size:18px}
+.bonl .k small{display:block;font-family:var(--sans);font-size:13px;color:var(--mist)}
+.bonl .btn{padding:8px 10px;font-size:13px;flex:none}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:confetti 2.8s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes confetti{to{transform:translate(var(--dx),110vh) rotate(var(--rot));opacity:.9}}
 /* ouverture : des billets tombent dans le bocal */
 .splash{position:fixed;inset:0;z-index:9999;background:radial-gradient(120% 60% at 50% 20%,var(--night3),var(--night) 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .45s ease}
 .splash.out{opacity:0;pointer-events:none}
@@ -207,6 +227,7 @@ nav button.on{color:var(--foam);font-style:italic}
     <div class="num" id="t-total">0<i>€</i></div>
     <div class="ital" id="t-verres">aucun verre</div>
     <div class="courses-du-jour" id="t-courses"></div>
+    <div class="epargne" id="t-epargne"></div>
    </div>
   </div>
   <div id="intro"></div>
@@ -334,6 +355,38 @@ function phraseEnvie(montant, v) {
   const n = Math.floor(montant / v.prix);
   return euros(montant, true) + ", c'est " + nombre(n, v.g) + ' ' + (n > 1 ? pluriel(v.nom) : v.nom) + '.';
 }
+// Récompenses : un soir est « libre » s'il est passé (avant aujourd'hui), après la première saisie, et sans aucun verre.
+function joursAlcool(entrees) { const s = new Set(); entrees.forEach(e => { if (e.alcool) s.add(cleJour(e.t)); }); return s; }
+function premierJour(entrees) { return entrees.reduce((m, e) => { const j = cleJour(e.t); return j < m ? j : m; }, '9999'); }
+function soirsLibres(entrees, auj) {
+  if (!entrees.length) return [];
+  const al = joursAlcool(entrees), r = [];
+  for (let k = premierJour(entrees); k < auj; k = ajouterJours(k, 1)) if (!al.has(k)) r.push(k);
+  return r;
+}
+// Le prix d'une soirée avec un verre, mesuré sur ses propres soirées (12 € tant qu'il y en a moins de 3).
+function prixSoiree(entrees) {
+  const parJour = {};
+  entrees.forEach(e => { if (e.alcool) { const j = cleJour(e.t); parJour[j] = (parJour[j] || 0) + (e.prix || 0); } });
+  const v = Object.values(parJour).filter(x => x > 0);
+  if (v.length < 3) return 12;
+  return arr(v.reduce((a, b) => a + b, 0) / v.length);
+}
+function epargne(entrees, bons, auj) {
+  const brut = soirsLibres(entrees, auj).length * prixSoiree(entrees);
+  return arr(Math.max(0, brut - (bons || []).reduce((a, b) => a + b.montant, 0)));
+}
+// Les semaines (lundi à dimanche) entièrement passées et entièrement libres.
+function semainesLibres(entrees, auj) {
+  const libres = new Set(soirsLibres(entrees, auj)), r = [];
+  if (!entrees.length) return r;
+  for (let l = cleSemaine(premierJour(entrees)); ajouterJours(l, 6) < auj; l = ajouterJours(l, 7)) {
+    let ok = true;
+    for (let i = 0; i < 7; i++) if (!libres.has(ajouterJours(l, i))) { ok = false; break; }
+    if (ok) r.push(l);
+  }
+  return r;
+}
 // LOGIQUE-FIN
 
 /* ---------- données ---------- */
@@ -343,7 +396,8 @@ const ENVIES = [
   { nom: 'place de concert', g: 'f', prix: 45 }, { nom: 'séance de ciné', g: 'f', prix: 12 },
   { nom: 'livre', g: 'm', prix: 20 }, { nom: 'massage', g: 'm', prix: 60 },
   { nom: 'plein pour le van', g: 'm', prix: 90 }, { nom: 'jeu PS5', g: 'm', prix: 70 },
-  { nom: 'cours de chant', g: 'm', prix: 40 }, { nom: 'soirée au théâtre', g: 'f', prix: 30 }];
+  { nom: 'cours de chant', g: 'm', prix: 40 }, { nom: 'soirée au théâtre', g: 'f', prix: 30 },
+  { nom: 'soin pour les cheveux', g: 'm', prix: 20 }, { nom: 'tee-shirt', g: 'm', prix: 25 }];
 function art(id, nom, o) { return Object.assign({ id, nom, prix: null, recents: [], alcool: false, std: 1, paquet: false, demander: false, cache: false }, o || {}); }
 function depart() {
   return {
@@ -354,7 +408,7 @@ function depart() {
       { id: 'maison', nom: 'À la maison', cache: false, articles: [art('verre', 'Verre', { alcool: true, prix: 0 })] },
       { id: 'courses', nom: 'Courses', cache: false, articles: [art('superu', 'Super U', { demander: true }), art('maximat', 'Maximat', { demander: true }), art('noel', 'Marché de Noël', { demander: true })] },
       { id: 'tabac', nom: 'Tabac', cache: false, articles: [art('paquet', 'Paquet', { paquet: true }), art('clope', 'Clope', { clope: true, prix: 0 }), art('jeux', 'Jeux', { demander: true })] }],
-    entrees: [],
+    entrees: [], bons: [], fetes: [],
     reglages: { repere: 50, catsBocal: ['alcool'], cigParPaquet: 20, envies: ENVIES.map(e => Object.assign({}, e)) }
   };
 }
@@ -374,6 +428,14 @@ function charger() {
     const t = S.cats.find(c => c.id === 'tabac');
     if (t && !t.articles.some(a => a.clope)) t.articles.splice(1, 0, art('clope', 'Clope', { clope: true, prix: 0 }));
     S.migClope = true;
+  }
+  // v9 : les récompenses
+  if (!S.migRecomp) {
+    S.bons = S.bons || []; S.fetes = S.fetes || [];
+    [{ nom: 'soin pour les cheveux', g: 'm', prix: 20 }, { nom: 'tee-shirt', g: 'm', prix: 25 }].forEach(v => { if (!S.reglages.envies.some(x => x.nom === v.nom)) S.reglages.envies.push(v); });
+    // les semaines déjà passées ne déclenchent pas de confettis rétroactifs
+    S.fetes = S.fetes.concat(semainesLibres(S.entrees, cleJour(Date.now())));
+    S.migRecomp = true;
   }
 }
 function sauver() {
@@ -406,7 +468,7 @@ $('#voile').addEventListener('click', e => { if (e.target.id === 'voile') fermer
 /* ---------- le bocal ---------- */
 const CORPS = 'M64 40 C34 44 24 58 24 86 V262 C24 280 36 290 54 290 H136 C154 290 166 280 166 262 V86 C166 58 156 44 126 40 Z';
 let nb = 0;
-function bocalSVG(montant, repere, mini) {
+function bocalSVG(montant, repere, mini, deco) {
   nb++;
   const haut = 70, bas = 290, plage = bas - haut;
   const echelle = repere > 0 ? Math.max(repere * 1.25, montant * 1.04) : Math.max(montant * 1.25, 40);
@@ -423,8 +485,9 @@ function bocalSVG(montant, repere, mini) {
    <pattern id="g${nb}" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#9c7f4c" opacity=".45"/><circle cx="4.5" cy="4" r=".6" fill="#fff" opacity=".45"/></pattern></defs>
    <g clip-path="url(#c${nb})"><g class="sable" ${vide} style="transform:translateY(${decal}px)" data-final="0">
     <path d="${vague(niveau)} V300 H0Z" fill="url(#s${nb})"/>${corail}
-    ${mini ? '' : `<path d="${vague(niveau)} V300 H0Z" fill="url(#g${nb})"/><path d="M70 270 q6 -10 12 0 z" fill="#f7ead2" opacity=".8"/><path d="M118 250 l3 6 6 1 -5 4 1 6 -5 -3 -5 3 1 -6 -5 -4 6 -1z" fill="#e9b7a6" opacity=".85"/>`}
+    ${mini ? '' : `<path d="${vague(niveau)} V300 H0Z" fill="url(#g${nb})"/>`}
    </g></g>
+   ${!mini && deco ? `<g clip-path="url(#c${nb})">${decoBocal(deco)}</g>` : ''}
    ${yRep !== null && !mini ? `<line x1="26" y1="${yRep}" x2="164" y2="${yRep}" stroke="#f7ead2" stroke-width="1.4" stroke-dasharray="5 4" opacity=".75"/>
    <text x="172" y="${yRep - 2}" fill="#8ea1bf" font-family="Work Sans,sans-serif" font-size="13">repère</text>
    <text x="172" y="${yRep + 12}" fill="#8ea1bf" font-family="Work Sans,sans-serif" font-size="13">${euros(repere, true)}</text>` : ''}
@@ -433,6 +496,20 @@ function bocalSVG(montant, repere, mini) {
    <rect x="58" y="10" width="74" height="16" rx="3" fill="none" stroke="#f7ead2" stroke-width="${sw}"/>
    <path d="M64 26 V40 M126 26 V40" stroke="#f7ead2" stroke-width="${sw}"/>
   </svg>`;
+}
+function decoBocal(d) {
+  // positions stables : le même coquillage reste au même endroit d'une ouverture à l'autre
+  const COUL = ['#f7ead2', '#e9b7a6', '#9fc9b9', '#f3d9a4'];
+  let h = '';
+  for (let i = 0; i < Math.min(d.coquillages, 40); i++) {
+    const x = 42 + ((i * 37) % 104), y = 284 - ((i * 23) % 6) * 4 - Math.floor(i / 10) * 7, r = ((i * 47) % 50) - 25;
+    h += `<g transform="translate(${x} ${y}) rotate(${r})"><g class="coq" style="animation-delay:${1.1 + i * 0.06}s"><path d="M-6 0 Q0 -11 6 0 Z" fill="${COUL[i % 4]}"/><path d="M0 0 L0 -8 M-3 0 L-1.5 -7 M3 0 L1.5 -7" stroke="#0f1d33" stroke-opacity=".25" stroke-width=".8"/></g></g>`;
+  }
+  for (let i = 0; i < d.etoiles; i++) {
+    const x = 60 + ((i * 41) % 70), y = 262 - i * 6;
+    h += `<g transform="translate(${x} ${y}) scale(1.6)"><path class="coq" style="animation-delay:${1.6 + i * 0.2}s" d="M0 -6 L1.8 -1.8 6 -1.2 2.8 1.8 3.6 6 0 3.8 -3.6 6 -2.8 1.8 -6 -1.2 -1.8 -1.8Z" fill="#e98a6b"/></g>`;
+  }
+  return h;
 }
 function animerSable(root) {
   requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll('.sable').forEach(g => g.style.transform = 'translateY(0)')));
@@ -474,6 +551,8 @@ function rendreSaisie(flashId) {
   $('#t-total').innerHTML = bigNum(horsCourses);
   $('#t-verres').textContent = verresMots(r.verres) + (r.clopes ? ' · ' + r.clopes + (r.clopes > 1 ? ' cigarettes' : ' cigarette') : '');
   $('#t-courses').textContent = r.parCat.courses ? '+ ' + euros(r.parCat.courses.total) + ' de courses' : '';
+  const ep = epargne(S.entrees, S.bons, auj);
+  $('#t-epargne').textContent = ep > 0 ? euros(ep, true) + ' mis de côté' : '';
   const ym = auj.slice(0, 7);
   $('#mini').innerHTML = bocalSVG(depenseBocal(e => e.jour.startsWith(ym)), S.reglages.repere, true);
   $('#intro').innerHTML = S.intro ? `<div class="intro"><b>Le Bocal</b> garde la trace de ce que tu dépenses au bar, au tabac et en courses, et de ce que tu consommes. Un toucher par article. Rien ne sonne, et tes données restent sur ce téléphone.<br><button id="intro-ok">Commencer</button></div>` : '';
@@ -599,9 +678,17 @@ function rendreBilan() {
   const repere = vue.k === 'mois' ? R.repere : vue.k === 'semaine' ? (R.repere ? Math.round(R.repere * 12 / 52) : 0) : 0;
   let h = `<div class="tete"><div class="lab">${esc(B.titre)}, ${esc(noms.join(' et ') || 'rien de choisi')}</div><div class="num">${bigNum(dep)}</div>
     ${repere > 0 && dep > repere ? `<div class="cap">repère passé de ${euros(dep - repere, true)}</div>` : ''}</div>`;
-  if (vue.k !== 'jour') h += `<div class="bocal-wrap">${bocalSVG(dep, repere, false)}</div>`;
+  let deco = null;
+  if (vue.k === 'mois') deco = { coquillages: soirsLibres(S.entrees, auj).filter(k => k.startsWith(B.ym)).length, etoiles: semainesLibres(S.entrees, auj).filter(l => ajouterJours(l, 6).startsWith(B.ym)).length };
+  if (vue.k !== 'jour') h += `<div class="bocal-wrap">${bocalSVG(dep, repere, false, deco)}</div>`;
   const env = choisirEnvies(dep, R.envies);
   if (env.length) { const v = env[envieIdx % env.length]; h += `<div class="envie" id="envie">${esc(phraseEnvie(dep, v)).replace(/c&#39;est (.*)\.$/, "c'est <b>$1</b>.")}</div>`; }
+  const libresTous = soirsLibres(S.entrees, auj);
+  if (libresTous.length) {
+    const ep = epargne(S.entrees, S.bons, auj), ps = prixSoiree(S.entrees);
+    const estim = Object.keys(S.entrees.filter(e => e.alcool).reduce((o, e) => (o[cleJour(e.t)] = 1, o), {})).length < 3;
+    h += `<div class="tirelire"><div class="lab" style="color:var(--sage)">Ma tirelire</div><div class="m">${bigNum(Math.round(ep))}</div><p>${libresTous.length} soir${libresTous.length > 1 ? 's' : ''} libre${libresTous.length > 1 ? 's' : ''}, à ${euros(ps, true)} la soirée${estim ? ' (une estimation, en attendant tes vraies soirées)' : ' (le prix moyen de tes soirées avec un verre)'}. Chaque soir libre dépose un coquillage dans le bocal.</p></div>`;
+  }
   h += `<div class="stats"><div><b>${r.bieres}</b>bière${r.bieres > 1 ? 's' : ''}</div><div><b>${r.verres}</b>verre${r.verres > 1 ? 's' : ''} d'alcool</div>${vue.k !== 'jour' ? `<div><b>${r.soirsAlcool}</b>soir${r.soirsAlcool > 1 ? 's' : ''} avec un verre</div>` : ''}<div><b>${r.cigarettes ? (r.estime ? '~' : '') + r.cigarettes : 0}</b>cigarette${r.cigarettes > 1 ? 's' : ''}${r.estime && r.cigarettes ? ' (estimées)' : ''}</div></div>`;
   // poste par poste : ce que coûte chaque article consommé (hors courses), du plus cher au moins cher
   const postes = [];
@@ -660,6 +747,14 @@ function rendreBilan() {
   h += `<div class="bloc"><h3>Ma semaine</h3><div class="sem7">${jours7}</div>
    <div class="ronds">${ronds}</div>
    <div class="pas"><b>${s.std}</b> verre${s.std > 1 ? 's' : ''} sur 10 cette semaine <button class="pq" id="pourquoi10">pourquoi 10 ?</button></div></div>`;
+  // ce que je m'offre
+  if ((S.bons || []).length) {
+    h += `<div class="bloc"><h3>Ce que je m'offre</h3>${S.bons.slice().reverse().map(b => {
+      const etat = auj < b.valable ? `<small>valable dès ${dateCourte(b.valable)}</small>` : b.offert ? `<small>offert le ${dateCourte(b.offert)}</small>` : '<small>à toi</small>';
+      const btn = auj >= b.valable && !b.offert ? `<button class="btn" data-bon="${b.id}">C'est fait</button>` : '';
+      return `<div class="bonl"><span class="k">${nombre(1, b.g)} ${esc(b.nom)} · ${euros(b.montant, true)}${etat}</span>${btn}</div>`;
+    }).join('')}</div>`;
+  }
   // à rembourser
   const dus = S.entrees.filter(e => e.carte && !e.rembourse && !e.offerte);
   if (dus.length) {
@@ -669,6 +764,7 @@ function rendreBilan() {
   $('#bilan').innerHTML = h;
   animerSable($('#bilan'));
   const p10 = $('#pourquoi10'); if (p10) p10.onclick = () => { pv = null; feuille(`<h4>Pourquoi 10 ?</h4><div class="pas" style="margin-top:12px">C'est le repère de Santé publique France pour garder un risque bas : <b>10 verres par semaine au plus</b>, pas plus de 2 dans la journée, et des soirs libres.<br><br>Un demi, c'est 1 verre. Une pinte, 2.</div><div class="actions"><button class="btn discret" onclick="fermer()">Fermer</button></div>`); };
+  document.querySelectorAll('[data-bon]').forEach(b => b.onclick = () => { const x = S.bons.find(y => y.id === b.dataset.bon); if (x) { x.offert = aujourdhui(); sauver(); toast('Profites-en'); rendreBilan(); } });
   const ev = $('#envie'); if (ev) ev.onclick = () => { envieIdx++; rendreBilan(); };
   const rb = $('#rembourse'); if (rb) rb.onclick = () => { if (!confirm('Marquer ' + dus.length + ' saisie(s) comme remboursée(s) ?')) return; dus.forEach(e => e.rembourse = true); sauver(); rendreBilan(); };
 }
@@ -791,6 +887,69 @@ $('#fichier').addEventListener('change', async ev => {
   ev.target.value = '';
 });
 
+/* ---------- récompenses ---------- */
+const PHRASES = [
+  "Ce qui n'est pas parti en mousse est resté pour toi.",
+  "Tes soirs libres ont fait des petits.",
+  "La marée monte doucement dans ta tirelire.",
+  "Petite marée, grand trésor.",
+  "Ce soir-là, tu as dit non. Aujourd'hui, tu peux dire oui.",
+  "Le meilleur verre, c'est parfois celui qu'on transforme en autre chose.",
+  "Tu as semé des soirs tranquilles. Voilà la récolte.",
+  "Ton futur toi te remercie. Ton toi d'aujourd'hui aussi.",
+  "Un coquillage, ça ne s'achète pas. Ça se ramasse.",
+  "Rien ne presse : ton cadeau t'attend dès demain.",
+  "Il y a des soirs qui valent de l'or. Ceux-là en font partie.",
+  "Plusieurs soirs, tu as pris soin de toi. Ça se fête."];
+const hasard = l => l[Math.floor(Math.random() * l.length)];
+function confettis() {
+  const c = document.createElement('div'); c.className = 'confetti';
+  const coul = ['#efdfbb', '#e98a6b', '#7fb7a4', '#f7ead2', '#f0a73a', '#e9b7a6'];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('i');
+    p.style.left = Math.random() * 100 + 'vw'; p.style.background = coul[i % coul.length];
+    p.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); p.style.setProperty('--rot', (Math.random() * 900 - 450) + 'deg');
+    p.style.animationDelay = Math.random() * 0.6 + 's';
+    c.appendChild(p);
+  }
+  document.body.appendChild(c); setTimeout(() => c.remove(), 3800);
+}
+function surprises() {
+  if ($('#voile').classList.contains('on') || document.getElementById('splash')) return;
+  const auj = aujourdhui();
+  const nouvelles = semainesLibres(S.entrees, auj).filter(l => !S.fetes.includes(l));
+  if (nouvelles.length) {
+    S.fetes = S.fetes.concat(nouvelles); sauver(); confettis(); pv = null;
+    feuille(`<div style="text-align:center"><svg width="80" height="80" viewBox="-8 -8 16 16"><path d="M0 -6 L1.8 -1.8 6 -1.2 2.8 1.8 3.6 6 0 3.8 -3.6 6 -2.8 1.8 -6 -1.2 -1.8 -1.8Z" fill="#e98a6b"/></svg>
+      <h4 style="margin-top:6px">Une semaine entière libre</h4><div class="cookie-phrase">Sept soirs de suite. Une étoile de mer rejoint ton bocal.</div></div>
+      <div class="actions"><button class="btn plein" id="ok-etoile">Merci</button></div>`);
+    $('#ok-etoile').onclick = () => { fermer(); rendreTout(); };
+    return;
+  }
+  const ep = epargne(S.entrees, S.bons, auj);
+  const possibles = S.reglages.envies.filter(v => v.prix > 0 && v.prix <= ep);
+  if (!possibles.length || S.dernierCookie === auj) return;
+  S.dernierCookie = auj; sauver();
+  cookie(hasard(possibles), ep);
+}
+function cookie(v, ep) {
+  pv = null;
+  feuille(`<div class="lab" style="color:var(--sage)">Un coquillage s'ouvre</div>
+    <div class="cookie-phrase">${esc(hasard(PHRASES))}</div>
+    <div class="pas"><b>${euros(ep, true)}</b> mis de côté. De quoi t'offrir ${nombre(1, v.g)} ${esc(v.nom)} (${euros(v.prix, true)}).</div>
+    <div class="actions" style="flex-direction:column"><button class="btn plein" id="ck-offre">Je me l'offre</button><button class="btn" id="ck-garde">Je garde pour plus grand</button><button class="btn discret" id="ck-tard">Plus tard</button></div>`);
+  $('#ck-offre').onclick = () => {
+    const auj = aujourdhui();
+    const b = { id: uid(), nom: v.nom, g: v.g, montant: v.prix, cree: auj, valable: ajouterJours(auj, 1), offert: null };
+    S.bons.push(b); sauver();
+    feuille(`<div class="bon"><div class="t">Bon pour</div><div class="n">${nombre(1, v.g)} ${esc(v.nom)}</div><div class="v">${euros(v.prix, true)}</div><div class="d">valable dès ${dateCourte(b.valable)} · rien ne s'achète le jour même</div></div>
+      <div class="actions"><button class="btn plein" id="bon-ok">Je le garde</button></div>`);
+    $('#bon-ok').onclick = () => { fermer(); rendreTout(); };
+  };
+  $('#ck-garde').onclick = () => { fermer(); toast('Gardé. Ça grossit pour plus grand.'); };
+  $('#ck-tard').onclick = () => fermer();
+}
+
 /* ---------- navigation ---------- */
 let ecran = 'saisir';
 function rendreTout(flash) { if (ecran === 'saisir') rendreSaisie(flash); else if (ecran === 'bilan') rendreBilan(); else rendreReglages(); }
@@ -805,13 +964,13 @@ document.querySelector('nav').addEventListener('click', e => {
   rendreTout();
 });
 // au retour dans l'appli (le lendemain par exemple), on remet la date à jour
-document.addEventListener('visibilitychange', () => { if (!document.hidden) rendreTout(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { rendreTout(); surprises(); } });
 sauver();
 rendreTout();
 // ouverture : un toucher la passe
 const splash = document.getElementById('splash');
 let splashFini = false;
-function finSplash() { if (splashFini) return; splashFini = true; splash.classList.add('out'); setTimeout(() => splash.remove(), 500); }
+function finSplash() { if (splashFini) return; splashFini = true; splash.classList.add('out'); setTimeout(() => { splash.remove(); surprises(); }, 500); }
 splash.addEventListener('click', finSplash);
 setTimeout(finSplash, matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 3300);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
