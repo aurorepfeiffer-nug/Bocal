@@ -581,7 +581,7 @@ function rendreBilan() {
   if (vue.k !== 'jour') h += `<div class="bocal-wrap">${bocalSVG(dep, repere, false)}</div>`;
   const env = choisirEnvies(dep, R.envies);
   if (env.length) { const v = env[envieIdx % env.length]; h += `<div class="envie" id="envie">${esc(phraseEnvie(dep, v)).replace(/c&#39;est (.*)\.$/, "c'est <b>$1</b>.")}</div>`; }
-  h += `<div class="stats"><div><b>${r.bieres}</b>bière${r.bieres > 1 ? 's' : ''}</div><div><b>${r.verres}</b>verre${r.verres > 1 ? 's' : ''} d'alcool</div>${vue.k !== 'jour' ? `<div><b>${r.soirsAlcool}</b>soir${r.soirsAlcool > 1 ? 's' : ''} avec alcool</div>` : ''}<div><b>${r.cigarettes ? '~' + r.cigarettes : 0}</b>cigarettes</div></div>`;
+  h += `<div class="stats"><div><b>${r.bieres}</b>bière${r.bieres > 1 ? 's' : ''}</div><div><b>${r.verres}</b>verre${r.verres > 1 ? 's' : ''} d'alcool</div>${vue.k !== 'jour' ? `<div><b>${r.soirsAlcool}</b>soir${r.soirsAlcool > 1 ? 's' : ''} avec un verre</div>` : ''}<div><b>${r.cigarettes ? '~' + r.cigarettes : 0}</b>cigarettes</div></div>`;
   // tout compris
   h += `<div class="bloc"><h3>Tout compris : ${euros(r.total)}</h3>`;
   const lignes = S.cats.filter(c => r.parCat[c.id]).map(c => {
@@ -603,7 +603,7 @@ function rendreBilan() {
     const rp = resume(S.entrees, e => e.jour.startsWith(ymP), R.cigParPaquet);
     const aut = r.parCat.autrement;
     let pas = '';
-    if (rp.n) pas += `<b>${r.soirsAlcool}</b> soir${r.soirsAlcool > 1 ? 's' : ''} avec alcool, contre ${rp.soirsAlcool} en ${MOIS[d.getMonth()]}. `;
+    if (rp.n) pas += `<b>${r.soirsAlcool}</b> soir${r.soirsAlcool > 1 ? 's' : ''} avec un verre, contre ${rp.soirsAlcool} en ${MOIS[d.getMonth()]}. `;
     if (aut) pas += 'Sorties autrement : ' + Object.entries(aut.articles).map(([n, v]) => v.qte + ' ' + (v.qte > 1 ? pluriel(n.toLowerCase()) : n.toLowerCase())).join(', ') + '.';
     if (pas) h += `<div class="bloc"><h3>Un pas après l'autre</h3><div class="pas">${pas}</div></div>`;
   }
@@ -629,16 +629,19 @@ function calendrierHTML(ym, auj) {
   const premier = (new Date(y, m - 1, 1).getDay() + 6) % 7, n = new Date(y, m, 0).getDate();
   let g = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(x => `<div class="h">${x}</div>`).join('');
   for (let i = 0; i < premier; i++) g += '<div class="d e"></div>';
+  let nVerre = 0, nLibre = 0;
+  const debut = S.entrees.length ? S.entrees.reduce((m, e) => { const j = cleJour(e.t); return j < m ? j : m; }, '9999') : auj;
   for (let d = 1; d <= n; d++) {
     const k = ym + '-' + deux(d), j = c[k];
     let cl = '';
     if (k > auj) cl = 'f';
-    else if (j && j.verres) cl = j.verres >= 3 ? 'v3' : 'v' + j.verres;
-    else if (j && j.autrement) cl = 's';
+    else if (k < debut) cl = '';
+    else if (j && j.verres) { cl = 'v3'; nVerre++; }
+    else { cl = 's'; nLibre++; }
     if (k === auj) cl += ' today';
     g += `<div class="d ${cl}" style="animation-delay:${d * 40}ms">${d}</div>`;
   }
-  return `<div class="bloc"><h3>Le mois, soir après soir</h3><div class="cal">${g}</div><div class="leg"><span><i style="background:rgba(240,167,58,.35)"></i>1 verre</span><span><i style="background:rgba(240,167,58,.68)"></i>2</span><span><i style="background:#f0a73a"></i>3 et plus</span><span><i style="background:var(--sage)"></i>sortie autrement</span></div></div>`;
+  return `<div class="bloc"><h3>Le mois, soir après soir</h3><div class="cal">${g}</div><div class="leg"><span><i style="background:#f0a73a"></i>un verre : ${nVerre} soir${nVerre > 1 ? 's' : ''}</span><span><i style="background:var(--sage)"></i>libre : ${nLibre} soir${nLibre > 1 ? 's' : ''}</span></div></div>`;
 }
 $('#b-tabs').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; vue.k = b.dataset.k; rendreBilan(); });
 $('#b-prec').onclick = () => { vue.ref = bornes().prec; envieIdx = 0; rendreBilan(); };
