@@ -607,12 +607,13 @@ function rendreDerniere() {
    <div class="chips">${recents.map(p => `<button class="chip${!e.offerte && p === e.prix ? ' on' : ''}" data-p="${p}">${euros(p).replace(' €', '')}</button>`).join('')}
    <button class="chip" data-autre="1">autre prix</button>
    <button class="chip t${e.cb ? ' on' : ''}" data-cb="1">${esc(nomCB())}</button>
+   <button class="chip t${e.esp ? ' on' : ''}" data-esp="1">espèces</button>
    <button class="chip t${e.carte ? ' on' : ''}" data-carte="1">ma carte</button>
    <button class="chip x" data-annul="1">annuler</button></div></div>`;
 }
 function rendreJour(auj) {
   const l = S.entrees.filter(e => cleJour(e.t) === auj).sort((a, b) => b.t - a.t);
-  $('#jour').innerHTML = l.length ? l.map(e => `<button class="ligne" data-e="${e.id}"><span class="h">${heure(e.t)}</span><span class="m">${esc(e.nom)}${e.offerte ? '<em>offert</em>' : ''}${e.carte ? '<em>ma carte</em>' : ''}${e.cb ? '<em>' + esc(nomCB()) + '</em>' : ''}</span><span class="v">${e.offerte ? '0 €' : euros(e.prix)}</span></button>`).join('') : '<div class="vide">Rien pour l\'instant.</div>';
+  $('#jour').innerHTML = l.length ? l.map(e => `<button class="ligne" data-e="${e.id}"><span class="h">${heure(e.t)}</span><span class="m">${esc(e.nom)}${e.offerte ? '<em>offert</em>' : ''}${e.carte ? '<em>ma carte</em>' : ''}${e.cb ? '<em>' + esc(nomCB()) + '</em>' : ''}${e.esp ? '<em>espèces</em>' : ''}</span><span class="v">${e.offerte ? '0 €' : euros(e.prix)}</span></button>`).join('') : '<div class="vide">Rien pour l\'instant.</div>';
 }
 $('#j-prec').onclick = () => { jourSaisie = ajouterJours(jourSaisie || aujourdhui(), -1); derniere = null; rendreSaisie(); };
 $('#j-suiv').onclick = () => { if (!jourSaisie) return; const k = ajouterJours(jourSaisie, 1); jourSaisie = k >= aujourdhui() ? null : k; derniere = null; rendreSaisie(); };
@@ -624,8 +625,9 @@ $('#derniere').addEventListener('click', ev => {
   const a = article(e.cat, e.art);
   if (b.dataset.p !== undefined) { e.prix = Number(b.dataset.p); e.offerte = false; if (a) memoriserPrix(a, e.prix); }
   else if (b.dataset.off) { e.offerte = !e.offerte; if (e.offerte) { e.prixAvant = e.prix; e.prix = 0; } else { e.prix = e.prixAvant || (a && a.prix) || 0; } }
-  else if (b.dataset.carte) { e.carte = !e.carte; if (e.carte) e.cb = false; }
-  else if (b.dataset.cb) { e.cb = !e.cb; if (e.cb) e.carte = false; }
+  else if (b.dataset.carte) { e.carte = !e.carte; if (e.carte) { e.cb = false; e.esp = false; } }
+  else if (b.dataset.cb) { e.cb = !e.cb; if (e.cb) { e.carte = false; e.esp = false; } }
+  else if (b.dataset.esp) { e.esp = !e.esp; if (e.esp) { e.carte = false; e.cb = false; } }
   else if (b.dataset.autre) { return editer(e); }
   else if (b.dataset.annul) { S.entrees = S.entrees.filter(x => x.id !== e.id); derniere = null; toast('Saisie annulée'); }
   sauver(); rendreSaisie();
@@ -635,13 +637,13 @@ $('#jour').addEventListener('click', ev => { const b = ev.target.closest('[data-
 /* pavé de montant : nouvelle saisie ou correction */
 let pv = null;
 function pave(c, a) {
-  pv = { c, a, txt: a.prix ? String(a.prix).replace('.', ',') : '', offerte: false, carte: false, cb: false, e: null };
+  pv = { c, a, txt: a.prix ? String(a.prix).replace('.', ',') : '', offerte: false, carte: false, cb: false, esp: false, e: null };
   dessinerPave();
 }
 function editer(e) {
   const c = cat(e.cat) || { id: e.cat, nom: '' };
   const a = article(e.cat, e.art) || { id: e.art, nom: e.nom, recents: [], alcool: e.alcool, prix: e.prix };
-  pv = { c, a, txt: e.offerte ? '' : String(e.prix).replace('.', ','), offerte: !!e.offerte, carte: !!e.carte, cb: !!e.cb, e };
+  pv = { c, a, txt: e.offerte ? '' : String(e.prix).replace('.', ','), offerte: !!e.offerte, carte: !!e.carte, cb: !!e.cb, esp: !!e.esp, e };
   dessinerPave();
 }
 function valeurPave() { const v = parseFloat((pv.txt || '0').replace(',', '.')); return isNaN(v) ? 0 : v; }
@@ -654,6 +656,7 @@ function dessinerPave() {
    <div class="clavier">${['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', '⌫'].map(k => `<button data-k="${k}">${k}</button>`).join('')}</div>
    <div class="chips" style="justify-content:center;margin-top:14px">
     <button class="chip t${pv.cb ? ' on' : ''}" data-cb="1">payé par ${esc(nomCB())}</button>
+    <button class="chip t${pv.esp ? ' on' : ''}" data-esp="1">espèces</button>
     <button class="chip t${pv.carte ? ' on' : ''}" data-carte="1">payé avec ma carte</button></div>
    <div class="actions">${e ? '<button class="btn danger" data-sup="1">Supprimer</button>' : '<button class="btn discret" data-x="1">Fermer</button>'}<button class="btn plein" data-ok="1">${e ? 'Corriger' : 'Ajouter'}</button></div>`);
 }
@@ -667,19 +670,20 @@ $('#feuille').addEventListener('click', ev => {
     else if (!/,\d\d$/.test(pv.txt) && pv.txt.length < 7) pv.txt = (pv.txt === '0' ? '' : pv.txt) + k;
   } else if (b.dataset.p) { pv.txt = String(b.dataset.p).replace('.', ','); pv.offerte = false; }
   else if (b.dataset.off) pv.offerte = !pv.offerte;
-  else if (b.dataset.carte) { pv.carte = !pv.carte; if (pv.carte) pv.cb = false; }
-  else if (b.dataset.cb) { pv.cb = !pv.cb; if (pv.cb) pv.carte = false; }
+  else if (b.dataset.carte) { pv.carte = !pv.carte; if (pv.carte) { pv.cb = false; pv.esp = false; } }
+  else if (b.dataset.cb) { pv.cb = !pv.cb; if (pv.cb) { pv.carte = false; pv.esp = false; } }
+  else if (b.dataset.esp) { pv.esp = !pv.esp; if (pv.esp) { pv.carte = false; pv.cb = false; } }
   else if (b.dataset.x) { pv = null; return fermer(); }
   else if (b.dataset.sup) { S.entrees = S.entrees.filter(x => x.id !== pv.e.id); if (derniere === pv.e.id) derniere = null; pv = null; sauver(); fermer(); toast('Saisie supprimée'); return rendreTout(); }
   else if (b.dataset.ok) {
     const v = valeurPave();
     if (pv.e) {
-      pv.e.prix = pv.offerte ? 0 : arr(v); pv.e.offerte = pv.offerte; pv.e.carte = pv.carte; pv.e.cb = pv.cb;
+      pv.e.prix = pv.offerte ? 0 : arr(v); pv.e.offerte = pv.offerte; pv.e.carte = pv.carte; pv.e.cb = pv.cb; pv.e.esp = pv.esp;
       const a = article(pv.e.cat, pv.e.art); if (a && !pv.offerte) memoriserPrix(a, pv.e.prix);
       sauver(); toast('Corrigé');
     } else {
       if (!pv.offerte && v <= 0 && !(pv.a.alcool)) { toast('Indique un montant'); return; }
-      ajouter(pv.c, pv.a, v, { offerte: pv.offerte, carte: pv.carte, cb: pv.cb });
+      ajouter(pv.c, pv.a, v, { offerte: pv.offerte, carte: pv.carte, cb: pv.cb, esp: pv.esp });
       toast(pv.a.nom + ' ajouté');
     }
     const flash = pv.e ? null : pv.a.id;
@@ -788,8 +792,9 @@ function rendreBilan() {
     }).join('')}</div>`;
   }
   // à rembourser
-  const cbPer = arr(S.entrees.filter(e => e.cb && B.pred(Object.assign({}, e, { jour: cleJour(e.t) }))).reduce((x, e) => x + (e.prix || 0), 0));
-  if (cbPer > 0) h += `<div class="bloc"><h3>Payé par ${esc(nomCB())}</h3><div class="pas"><b>${euros(cbPer)}</b> sur cette période.</div></div>`;
+  const parQui = f => arr(S.entrees.filter(e => f(e) && B.pred(Object.assign({}, e, { jour: cleJour(e.t) }))).reduce((x, e) => x + (e.prix || 0), 0));
+  const cbPer = parQui(e => e.cb), espPer = parQui(e => e.esp);
+  if (cbPer > 0 || espPer > 0) h += `<div class="bloc"><h3>Qui a payé</h3>${cbPer > 0 ? `<div class="catl"><span class="k">${esc(nomCB())}</span><span class="v">${euros(cbPer)}</span></div>` : ''}${espPer > 0 ? `<div class="catl"><span class="k">En espèces</span><span class="v">${euros(espPer)}</span></div>` : ''}</div>`;
   const dus = S.entrees.filter(e => e.carte && !e.rembourse && !e.offerte);
   if (dus.length) {
     const tot = arr(dus.reduce((x, e) => x + e.prix, 0));
